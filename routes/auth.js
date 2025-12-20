@@ -1,7 +1,7 @@
-import express from "express";
-import jwt from "jsonwebtoken";
-import { body, validationResult } from "express-validator";
-import User from "../models/User.js";
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const { body, validationResult } = require("express-validator");
+const User = require("../models/User");
 
 const router = express.Router();
 
@@ -177,7 +177,9 @@ router.post(
 // @route   GET /api/auth/me
 // @desc    Get current logged in user
 // @access  Private
-router.get("/me", require("../middleware/auth").protect, async (req, res) => {
+const { protect } = require("../middleware/auth");
+
+router.get("/me", protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -208,4 +210,4 @@ router.post("/logout", (req, res) => {
   });
 });
 
-export default router;
+module.exports = router;
