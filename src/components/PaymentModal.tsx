@@ -55,6 +55,12 @@ export function PaymentModal({
   if (!isOpen) return null;
 
   const handlePayment = async () => {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim().length === 0) {
+      toast.error("Please enter your M-Pesa phone number");
+      return;
+    }
+    
     setIsProcessing(true);
     setStatus("initiating");
     setMessage("Starting payment...");
@@ -62,6 +68,7 @@ export function PaymentModal({
     try {
       const response = await api.post("/payments/initiate", {
         bookingId,
+        phoneNumber,
       });
 
       const data = await response.json();
@@ -133,13 +140,19 @@ export function PaymentModal({
   };
 
   const retryPayment = async () => {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim().length === 0) {
+      toast.error("Please enter your M-Pesa phone number");
+      return;
+    }
+    
     try {
       setIsProcessing(true);
       setStatus("initiating");
       setMessage("Retrying payment...");
 
-      const response = await api.post("/payments/retry", {
-        bookingId,
+      const response = await api.post(`/payments/retry/${bookingId}`, {
+        phoneNumber,
       });
 
       const data = await response.json();
@@ -245,10 +258,9 @@ export function PaymentModal({
             type="tel"
             id="phoneNumber"
             value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
             placeholder="0712345678"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
-            readOnly
-            disabled
           />
           <p className="text-xs text-gray-500 mt-1">
             You'll receive an M-Pesa prompt on your registered number
