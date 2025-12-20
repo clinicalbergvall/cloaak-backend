@@ -130,6 +130,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/team-leader', require('./routes/team-leader'));  // Team Leader System
 app.use('/api/verification', require('./routes/verification'));  // Verification System
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/events', require('./routes/events').router);
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -200,6 +201,7 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
+  console.log('404 handler hit:', req.method, req.url);
   res.status(404).json({
     success: false,
     message: 'Route not found'

@@ -6,7 +6,103 @@ const Transaction = require('../models/transaction');
 const User = require('../models/User');
 const CleanerProfile = require('../models/CleanerProfile');
 const IntaSend = require('intasend-node');
-const { sendNotificationToBookingParticipants } = require('./events');
+const { protect } = require('../middleware/auth');
+const { sendNotificationToBookingParticipants, sendNotificationToUser } = require('./events');
+
+// CRITICAL: Payment Initiation Endpoint
+router.post('/initiate', protect, async (req, res) => {
+  console.log('Payment initiate route hit:', req.body);
+  try {
+    const { bookingId, phoneNumber } = req.body;
+    
+    // Get booking
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      client: req.user.id,
+      paymentStatus: 'pending'
+    });
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or already paid'
+      });
+    }
+    
+    // Initialize IntaSend (FIX: Use INTASEND_PUBLIC_KEY not PUBLISHABLE)
+    const intasend = new IntaSend(
+      process.env.INTASEND_PUBLIC_KEY,        // ✅ FIXED
+      process.env.INTASEND_SECRET_KEY,
+      process.env.NODE_ENV !== 'production'
+    );
+    
+    // Format phone: 254XXXXXXXXX
+    const formattedPhone = phoneNumber.replace(/^0/, '254').replace(/^\+/, '');
+    
+    // Trigger M-Pesa STK Push
+    const collection = intasend.collection();
+    const response = await collection.mpesaStkPush({
+      amount: booking.price,
+      phone_number: formattedPhone,
+      api_ref: bookingId,
+      callback_url: `${process.env.BACKEND_URL || 'https://clean-cloak-b.onrender.com'}/api/payments/webhook`,
+      metadata: {
+        booking_id: bookingId,
+        client_id: req.user.id.toString(),
+        service: booking.serviceCategory
+      }
+    });
+    
+    console.log('✅ STK Push initiated:', response);
+    
+    res.json({
+      success: true,
+      message: 'STK push sent. Check your phone.',
+      paymentReference: response.invoice?.invoice_id || response.id,
+      tracking_id: response.tracking_id
+    });
+    
+  } catch (error) {
+    console.error('❌ Payment initiation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initiate payment',
+      error: error.message
+    });
+  }
+});
+
+// Payment Status Check Endpoint
+router.get('/status/:bookingId', protect, async (req, res) => {
+  try {
+    const booking = await Booking.findOne({
+      _id: req.params.bookingId,
+      client: req.user.id
+    });
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      paymentStatus: booking.paymentStatus,
+      paid: booking.paid,
+      paidAt: booking.paidAt,
+      transactionId: booking.transactionId
+    });
+    
+  } catch (error) {
+    console.error('Payment status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payment status'
+    });
+  }
+});
 
 // Webhook from IntaSend – receives payment confirmation
 router.post(
@@ -162,7 +258,7 @@ async function processMpesaPayout(transaction, phoneNumber, amount) {
   try {
     // Initialise IntaSend client for payouts
     const client = new IntaSend(
-      process.env.INTASEND_PUBLISHABLE_KEY,
+      process.env.INTASEND_PUBLIC_KEY,  // ✅ FIXED
       process.env.INTASEND_SECRET_KEY,
       process.env.NODE_ENV !== 'production'   // true = sandbox
     );
@@ -214,5 +310,67 @@ async function processMpesaPayout(transaction, phoneNumber, amount) {
     throw error;
   }
 }
+
+// Payment Retry Endpoint
+router.post('/retry/:bookingId', protect, async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    
+    // Get booking
+    const booking = await Booking.findOne({
+      _id: req.params.bookingId,
+      client: req.user.id,
+      paymentStatus: 'pending'
+    });
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or already paid'
+      });
+    }
+    
+    // Initialize IntaSend (FIX: Use INTASEND_PUBLIC_KEY not PUBLISHABLE)
+    const intasend = new IntaSend(
+      process.env.INTASEND_PUBLIC_KEY,        // ✅ FIXED
+      process.env.INTASEND_SECRET_KEY,
+      process.env.NODE_ENV !== 'production'
+    );
+    
+    // Format phone: 254XXXXXXXXX
+    const formattedPhone = phoneNumber.replace(/^0/, '254').replace(/^\+/, '');
+    
+    // Trigger M-Pesa STK Push
+    const collection = intasend.collection();
+    const response = await collection.mpesaStkPush({
+      amount: booking.price,
+      phone_number: formattedPhone,
+      api_ref: booking._id,
+      callback_url: `${process.env.BACKEND_URL || 'https://clean-cloak-b.onrender.com'}/api/payments/webhook`,
+      metadata: {
+        booking_id: booking._id.toString(),
+        client_id: req.user.id.toString(),
+        service: booking.serviceCategory
+      }
+    });
+    
+    console.log('✅ STK Push retried:', response);
+    
+    res.json({
+      success: true,
+      message: 'STK push resent. Check your phone.',
+      paymentReference: response.invoice?.invoice_id || response.id,
+      tracking_id: response.tracking_id
+    });
+    
+  } catch (error) {
+    console.error('❌ Payment retry error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retry payment',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

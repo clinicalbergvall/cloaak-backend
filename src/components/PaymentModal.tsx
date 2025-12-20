@@ -31,16 +31,25 @@ export function PaymentModal({
     // Load phone number from booking or user session
     const loadPhoneNumber = async () => {
       try {
+        console.log('Loading phone number for booking:', bookingId);
         const response = await api.get(`/bookings/${bookingId}`);
+        console.log('Booking response:', response.status, response.statusText);
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Booking data:', data);
           // Check both booking.client.phone and booking.client?.phone
           if (data.booking?.client?.phone) {
+            console.log('Setting phone from client.phone:', data.booking.client.phone);
             setPhoneNumber(data.booking.client.phone);
           } else if (data.booking?.clientPhone) {
+            console.log('Setting phone from clientPhone:', data.booking.clientPhone);
             setPhoneNumber(data.booking.clientPhone);
+          } else {
+            console.log('No phone number found in booking data');
           }
+        } else {
+          console.log('Failed to load booking data');
         }
       } catch (error) {
         console.error("Error loading phone:", error);
@@ -60,6 +69,8 @@ export function PaymentModal({
       toast.error("Please enter your M-Pesa phone number");
       return;
     }
+    
+    console.log('Initiating payment with:', { bookingId, phoneNumber });
     
     setIsProcessing(true);
     setStatus("initiating");

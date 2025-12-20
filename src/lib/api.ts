@@ -19,7 +19,9 @@ const addCorsHeaders = (headers: HeadersInit = {}): HeadersInit => {
 // Simple fetch API wrapper
 export const api = {
   get: async (endpoint: string, options: RequestInit = {}) => {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log(`API GET Request to: ${url}`);
+    const response = await fetch(url, {
       ...options,
       headers: addCorsHeaders({
         ...getAuthHeaders(),
@@ -27,6 +29,7 @@ export const api = {
       }),
       credentials: 'include', // Send cookies
     });
+    console.log(`API GET Response from: ${url}`, response.status, response.statusText);
     if (response.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('clean-cloak-user-session');
@@ -35,7 +38,9 @@ export const api = {
     return response;
   },
   post: async (endpoint: string, data: Record<string, any>, options: RequestInit = {}) => {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log(`API POST Request to: ${url}`, data);
+    const response = await fetch(url, {
       ...options,
       method: 'POST',
       headers: addCorsHeaders({
@@ -45,6 +50,7 @@ export const api = {
       credentials: 'include', // Send cookies
       body: JSON.stringify(data),
     });
+    console.log(`API POST Response from: ${url}`, response.status, response.statusText);
     if (response.status === 401) {
       localStorage.removeItem('clean-cloak-user-session');
     }
