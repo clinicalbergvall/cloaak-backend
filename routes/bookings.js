@@ -48,10 +48,10 @@ router.post("/public", async (req, res) => {
       paymentStatus,
     } = req.body;
 
-    if (!contact?.name || !contact?.phone || !contact?.email) {
+    if (!contact?.name || !contact?.phone) {
       return res.status(400).json({
         success: false,
-        message: "Contact name, phone, and email are required",
+        message: "Contact name and phone are required",
       });
     }
 
@@ -93,14 +93,13 @@ router.post("/public", async (req, res) => {
     }
 
     let user = await User.findOne({
-      $or: [{ phone: contact.phone }, { email: contact.email }],
+      phone: contact.phone,
     });
 
     if (!user) {
       const generatedPassword = crypto.randomBytes(8).toString("hex");
       user = await User.create({
         name: contact.name,
-        email: contact.email,
         phone: contact.phone,
         password: generatedPassword,
         role: "client",
