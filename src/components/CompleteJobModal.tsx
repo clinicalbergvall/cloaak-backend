@@ -6,18 +6,17 @@ interface CompleteJobModalProps {
         serviceCategory: string
         price: number
     }
-    onConfirm: (notes: string) => Promise<void>
+    onConfirm: () => Promise<void>
     onCancel: () => void
 }
 
 export function CompleteJobModal({ booking, onConfirm, onCancel }: CompleteJobModalProps) {
-    const [notes, setNotes] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleSubmit = async () => {
         setIsSubmitting(true)
         try {
-            await onConfirm(notes)
+            await onConfirm()
         } finally {
             setIsSubmitting(false)
         }
@@ -66,31 +65,7 @@ export function CompleteJobModal({ booking, onConfirm, onCancel }: CompleteJobMo
                         </p>
                     </div>
 
-                    {}
-                    <div>
-                        <label
-                            htmlFor="completion-notes"
-                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                        >
-                            Completion Notes (Optional)
-                        </label>
-                        <textarea
-                            id="completion-notes"
-                            rows={3}
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Any additional notes about the job..."
-                            maxLength={200}
-                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
-                       focus:ring-2 focus:ring-green-500 focus:border-transparent
-                       bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                       placeholder-gray-400 dark:placeholder-gray-500
-                       resize-none"
-                        />
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {notes.length}/200 characters
-                        </p>
-                    </div>
+
                 </div>
 
                 {}

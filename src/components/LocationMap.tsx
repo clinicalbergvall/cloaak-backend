@@ -1,33 +1,11 @@
+import { useEffect, useRef, useState } from 'react';
 import { Card } from './ui'
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
-import icon from 'leaflet/dist/images/marker-icon.png'
-import iconShadow from 'leaflet/dist/images/marker-shadow.png'
 
-// Fix for default marker icon in React Leaflet
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-})
-L.Marker.prototype.options.icon = DefaultIcon
-
-// Component to recenter map when coordinates change
-function RecenterMap({ lat, lng }: { lat: number, lng: number }) {
-  const map = useMap()
-  map.setView([lat, lng])
-  return null
-}
-
-function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onClick(e.latlng.lat, e.latlng.lng);
-    }
-  })
-  return null;
+// Declare global google object
+declare global {
+  interface Window {
+    google: any;
+  }
 }
 
 interface LocationMapProps {
@@ -49,11 +27,14 @@ export default function LocationMap({
   draggable = false,
   onLocationChange
 }: LocationMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const displayAddress = location.manualAddress || location.address || "Unknown location"
+  const displayAddress = location.manualAddress || location.address || "Unknown location";
 
   // Default to Nairobi center if no coordinates (approximate)
-  const defaultCenter: [number, number] = [-1.2921, 36.8219]
+  const defaultCenter: [number, number] = [-1.2921, 36.8219];
 
   // Validate coordinates before using them
   const position: [number, number] = location.coordinates && 
@@ -66,17 +47,7 @@ export default function LocationMap({
     isFinite(location.coordinates[0]) &&
     isFinite(location.coordinates[1])
     ? [location.coordinates[0], location.coordinates[1]]
-    : defaultCenter
-
-  const eventHandlers = {
-    dragend(e: any) {
-      if (onLocationChange) {
-        const marker = e.target
-        const position = marker.getLatLng()
-        onLocationChange(position.lat, position.lng)
-      }
-    },
-  }
+    : defaultCenter;
 
   // Check if coordinates are valid before rendering
   const hasValidCoordinates = location.coordinates &&
@@ -88,6 +59,111 @@ export default function LocationMap({
     !isNaN(location.coordinates[1]) &&
     isFinite(location.coordinates[0]) &&
     isFinite(location.coordinates[1]);
+
+  useEffect(() => {
+    if (!mapRef.current || !import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+      setError('Google Maps API key is not configured');
+      return;
+    }
+
+    const initMap = async () => {
+      try {
+        // Load Google Maps script dynamically
+        if (!window.google) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+          script.async = true;
+          script.defer = true;
+          
+          script.onerror = () => {
+            setError('Failed to load Google Maps');
+          };
+          
+          document.head.appendChild(script);
+          
+          script.onload = () => {
+            loadMap();
+          };
+        } else {
+          loadMap();
+        }
+
+        function loadMap() {
+          let lat = position[0];
+          let lng = position[1];
+          let zoom = 15;
+
+          if (location.coordinates) {
+            // Use provided coordinates
+            [lat, lng] = location.coordinates;
+          } else if (location.address || location.manualAddress) {
+            // Geocode address to get coordinates
+            const geocoder = new window.google.maps.Geocoder();
+            const address = location.manualAddress || location.address || '';
+
+            geocoder.geocode({ address }, (results: any, status: any) => {
+              if (status === 'OK' && results[0]) {
+                const coords = results[0].geometry.location;
+                lat = coords.lat();
+                lng = coords.lng();
+                
+                const map = new window.google.maps.Map(mapRef.current!, {
+                  center: { lat, lng },
+                  zoom: zoom,
+                });
+
+                const marker = new window.google.maps.Marker({
+                  position: { lat, lng },
+                  map,
+                  title: title,
+                  draggable: draggable,
+                });
+                
+                if (draggable && onLocationChange) {
+                  marker.addListener('dragend', (e: any) => {
+                    onLocationChange(e.latLng.lat(), e.latLng.lng());
+                  });
+                }
+                
+                setMapLoaded(true);
+              } else {
+                setError('Unable to geocode the address');
+                console.error('Geocoding failed:', status);
+              }
+            });
+            return;
+          }
+
+          // Create map with default or provided coordinates
+          const map = new window.google.maps.Map(mapRef.current!, {
+            center: { lat, lng },
+            zoom: zoom,
+          });
+
+          // Add marker if coordinates are available
+          const marker = new window.google.maps.Marker({
+            position: { lat: position[0], lng: position[1] },
+            map,
+            title: title,
+            draggable: draggable,
+          });
+
+          if (draggable && onLocationChange) {
+            marker.addListener('dragend', (e: any) => {
+              onLocationChange(e.latLng.lat(), e.latLng.lng());
+            });
+          }
+
+          setMapLoaded(true);
+        }
+      } catch (err) {
+        setError('Error initializing map');
+        console.error('Map initialization error:', err);
+      }
+    };
+
+    initMap();
+  }, [location, title, draggable, onLocationChange]);
 
   if (!hasValidCoordinates && !location.manualAddress && !location.address) {
     return (
@@ -121,30 +197,17 @@ export default function LocationMap({
         className="rounded-lg overflow-hidden bg-gray-100 z-0 relative"
         style={{ height: height }}
       >
-        <MapContainer
-          center={position}
-          zoom={15}
-          scrollWheelZoom={false}
-          style={{ height: '100%', width: '100%' }}
+        <div 
+          ref={mapRef} 
+          className="w-full h-full"
+          style={{ minHeight: height }}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <Marker
-            position={position}
-            draggable={draggable}
-            {...(draggable && onLocationChange ? { eventHandlers } : {})}
-          >
-            <Popup>
-              {displayAddress}
-            </Popup>
-          </Marker>
-          {(draggable && onLocationChange) ? (
-            <MapClickHandler onClick={onLocationChange} />
-          ) : null}
-          <RecenterMap lat={position[0]} lng={position[1]} />
-        </MapContainer>
+          {!mapLoaded && !error && (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+        </div>
       </div>
 
       {hasValidCoordinates && (

@@ -635,6 +635,12 @@ router.put(
       }
 
       booking.status = status;
+      
+      // Handle notes if provided
+      if (req.body.notes !== undefined) {
+        booking.completionNotes = req.body.notes;
+      }
+      
       if (status === "completed") {
         booking.completedAt = new Date();
         

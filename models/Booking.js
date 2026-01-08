@@ -172,6 +172,10 @@ const bookingSchema = new mongoose.Schema(
     completedAt: {
       type: Date,
     },
+    completionNotes: {
+      type: String,
+      maxlength: 500,
+    },
     acceptedAt: {
       type: Date,
     },

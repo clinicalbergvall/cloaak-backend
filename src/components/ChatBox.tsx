@@ -83,25 +83,30 @@ export default function ChatBox({
 
   useEffect(() => {
     const handleResize = () => {
-
       const isMobile = window.innerWidth <= 768;
       if (isMobile) {
         const viewportHeight = window.innerHeight;
         const documentHeight = document.documentElement.clientHeight;
-        const heightDifference = documentHeight - viewportHeight;
-
-
+        const heightDifference = Math.abs(documentHeight - viewportHeight);
+        
         setIsKeyboardVisible(heightDifference > 150);
+        
+        // Scroll to bottom when keyboard visibility changes
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       }
     };
-
+    
+    // Listen for both resize and orientationchange events
     window.addEventListener('resize', handleResize);
-
-
+    window.addEventListener('orientationchange', handleResize);
+    
     handleResize();
-
+    
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
     };
   }, []);
 
@@ -237,7 +242,7 @@ export default function ChatBox({
   }
 
   return (
-    <Card className={`flex flex-col ${isKeyboardVisible ? 'h-[70vh]' : 'h-[500px]'} max-h-[70vh]`}>
+    <Card className={`flex flex-col ${isKeyboardVisible ? 'h-[60vh]' : 'h-[500px]'} max-h-[70vh]`}>
       { }
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -249,7 +254,7 @@ export default function ChatBox({
       </div>
 
       { }
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={messagesEndRef}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,8 +289,8 @@ export default function ChatBox({
                     <div className={`max-w-[80%] ${isOwnMessage ? 'order-2' : 'order-1'} ${isOwnMessage ? 'ml-auto' : 'mr-auto'}`}>
                       <div
                         className={`rounded-2xl px-4 py-2 ${isOwnMessage
-                            ? 'bg-green-500 text-white rounded-br-none'
-                            : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                            ? 'bg-blue-500 text-white rounded-br-none'
+                            : 'bg-green-500 text-white rounded-bl-none'
                           }`}
                       >
                         {!isOwnMessage && msg.senderName && (
@@ -300,7 +305,7 @@ export default function ChatBox({
                           />
                         )}
                       </div>
-                      <div className={`text-xs text-gray-500 mt-1 flex ${isOwnMessage ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
+                      <div className={`text-xs ${isOwnMessage ? 'text-blue-100' : 'text-green-100'} mt-1 flex ${isOwnMessage ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
                         <span>{formatTime(msg.timestamp)}</span>
                         {isOwnMessage && msg.read && (
                           <span className="ml-1">✓✓</span>
@@ -332,13 +337,16 @@ export default function ChatBox({
                 }
               }}
               placeholder="Type a message..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+              className={`w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none ${isKeyboardVisible ? 'z-10' : ''}`}
               rows={1}
               style={{ minHeight: '44px', maxHeight: '120px' }}
               onFocus={(e) => {
-
+                // Ensure the input stays visible when keyboard appears
                 setTimeout(() => {
                   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                  
+                  // Additional scroll to ensure input is visible
+                  e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }, 100);
               }}
             />

@@ -125,13 +125,14 @@ export default function CleanerActiveBookings() {
     setShowCompleteModal(true);
   };
 
-  const handleConfirmComplete = async (notes: string) => {
+  const handleConfirmComplete = async () => {
     if (!selectedBooking) return;
 
     try {
-      const response = await api.post(
-        `/bookings/${selectedBooking._id || selectedBooking.id}/complete`,
-        { notes },
+      // Update booking status to completed using the status endpoint
+      const response = await api.put(
+        `/bookings/${selectedBooking._id || selectedBooking.id}/status`,
+        { status: 'completed' },
       );
 
       if (!response.ok) {

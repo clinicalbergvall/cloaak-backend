@@ -212,7 +212,7 @@ export default function App() {
           style={{
             background: darkMode
               ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
-              : "linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)",
+              : "linear-gradient(135deg, #bbdefb 0%, #64b5f6 100%)",
             backgroundSize: "400% 400%",
           }}
         >

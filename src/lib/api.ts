@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './config';
 import { logger } from './logger';
+import { USER_SESSION_KEY } from './storage';
 
 
 
@@ -33,7 +34,7 @@ export const api = {
       console.log(`API GET Response from: ${url}`, response.status, response.statusText);
       if (response.status === 401) {
         
-        localStorage.removeItem('clean-cloak-user-session');
+        localStorage.removeItem(USER_SESSION_KEY);
         
       }
       return response;
@@ -59,7 +60,7 @@ export const api = {
       });
       console.log(`API POST Response from: ${url}`, response.status, response.statusText);
       if (response.status === 401) {
-        localStorage.removeItem('clean-cloak-user-session');
+        localStorage.removeItem(USER_SESSION_KEY);
       }
       return response;
     } catch (error) {
@@ -81,7 +82,7 @@ export const api = {
         body: JSON.stringify(data),
       });
       if (response.status === 401) {
-        localStorage.removeItem('clean-cloak-user-session');
+        localStorage.removeItem(USER_SESSION_KEY);
       }
       return response;
     } catch (error) {
@@ -102,7 +103,7 @@ export const api = {
         credentials: 'include', 
       });
       if (response.status === 401) {
-        localStorage.removeItem('clean-cloak-user-session');
+        localStorage.removeItem(USER_SESSION_KEY);
       }
       return response;
     } catch (error) {
@@ -122,7 +123,7 @@ export const authAPI = {
 
       if (data.success) {
         
-        localStorage.setItem('clean-cloak-user-session', JSON.stringify(data.user));
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(data.user));
       }
 
       return data;
@@ -139,7 +140,7 @@ export const authAPI = {
 
       if (data.success) {
         
-        localStorage.setItem('clean-cloak-user-session', JSON.stringify(data.user));
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(data.user));
       }
 
       return data;
@@ -163,7 +164,7 @@ export const authAPI = {
   logout: async () => {
     try {
       await api.post('/auth/logout', {});
-      localStorage.removeItem('clean-cloak-user-session');
+      localStorage.removeItem(USER_SESSION_KEY);
       logger.info('User logged out');
     } catch (error) {
       logger.error('Logout error', error instanceof Error ? error : undefined);

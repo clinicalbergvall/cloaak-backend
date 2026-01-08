@@ -72,6 +72,8 @@ app.use(cors({
   origin: [
     'https://sprightly-trifle-9b980c.netlify.app',
     'https://teal-daffodil-d3a9b2.netlify.app',
+    'https://clean-cloak-b.onrender.com',
+    'capacitor://localhost',
     'http://localhost:5173',
     'http://localhost:3000'
   ],
