@@ -8,7 +8,7 @@ interface ErrorBoundaryProps {
   onError?: (error: Error) => void;
 }
 
-const ErrorBoundary: React.FC<ErrorBoundaryProps> = ({ children, fallback, onError }) => {
+const ErrorBoundary: React.FC<ErrorBoundaryProps> = ({ children, fallback, onError }: ErrorBoundaryProps) => {
   const [hasError, setHasError] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 

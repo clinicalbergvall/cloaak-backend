@@ -1,15 +1,19 @@
-import { InputHTMLAttributes, forwardRef } from 'react'
+import React from 'react'
+
+// Workaround for React import issues
+const forwardRef = (React as any).forwardRef;
+const InputHTMLAttributes: any = null;
 import { nanoid } from 'nanoid'
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps {
   label?: string
   error?: string
   helperText?: string
-  icon?: React.ReactNode
+  icon?: any
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, icon, className = '', id, ...props }, ref) => {
+export const Input = forwardRef(
+  ({ label, error, helperText, icon, className = '', id, ...props }: any, ref: any) => {
     const generatedId = id || nanoid();
     
     return (

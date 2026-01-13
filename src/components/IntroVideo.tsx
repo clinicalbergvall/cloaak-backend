@@ -4,7 +4,7 @@ interface IntroVideoProps {
   onComplete: () => void;
 }
 
-const IntroVideo: React.FC<IntroVideoProps> = ({ onComplete }) => {
+const IntroVideo: React.FC<IntroVideoProps> = ({ onComplete }: IntroVideoProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFading, setIsFading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -13,10 +13,10 @@ const IntroVideo: React.FC<IntroVideoProps> = ({ onComplete }) => {
     const videoElement = videoRef.current;
     if (videoElement) {
       
-      videoElement.play().catch((error) => {
+      videoElement.play().catch((error: any) => {
         console.warn("Autoplay prevented:", error);
         videoElement.muted = true;
-        videoElement.play().catch(e => console.error("Muted autoplay also failed", e));
+        videoElement.play().catch((e: any) => console.error("Muted autoplay also failed", e));
       });
 
       const handleEnded = () => {

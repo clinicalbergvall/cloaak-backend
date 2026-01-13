@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import AppEnhanced from './AppEnhanced';
 import { Button, Card } from '@/components/ui'
 import { LoginForm } from '@/components/ui'
 import { loadUserSession } from '@/lib/storage'
@@ -16,7 +17,7 @@ export default function LandingPage() {
       return null
     }
     
-    return React.createElement(require('./AppEnhanced').default)
+    return <AppEnhanced />
   }
 
   if (showLogin) {

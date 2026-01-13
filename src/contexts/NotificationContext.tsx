@@ -1,4 +1,9 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { useState, useEffect } from 'react';
+
+// Workaround for React import issues
+const createContext = (React as any).createContext;
+const useContext = (React as any).useContext;
+
 import { toast } from 'react-hot-toast'
 import { io, Socket } from 'socket.io-client'
 import { logger } from '@/lib/logger'
@@ -27,12 +32,12 @@ interface NotificationContextType {
   toggleToastMute: () => void
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
+const NotificationContext = createContext(undefined as NotificationContextType | undefined)
 
 const STORAGE_KEY = 'cleancloak_notifications'
 const TOAST_MUTE_KEY = 'cleancloak_toast_mute'
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(() => {
 
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -145,7 +150,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const unreadCount = notifications.filter((n: Notification) => !n.read).length
 
   const processNotification = (type: string, data: any) => {
 
@@ -174,7 +179,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const messageBuilder = messageMap[type]
     const message = messageBuilder ? messageBuilder(data) : 'New activity'
 
-    setNotifications(prev => ([
+    setNotifications((prev: Notification[]) => ([
       {
         id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: (type === 'booking_completed' ? 'service_complete' :
@@ -194,7 +199,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     ]))
 
     if (!toastMuted) {
-      toast.custom((t) => (
+      toast.custom((t: any) => (
         <div
           className={`${t.visible ? 'animate-enter' : 'animate-leave'
             } max-w-md w-full bg-slate-900 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-yellow-400/20 border border-slate-700/50 backdrop-blur-xl overflow-hidden`}
@@ -202,49 +207,34 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           <div className="flex-1 w-0 p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0 pt-0.5">
-                <div className="p-2 bg-yellow-400/10 rounded-xl">
-                  {type === 'newMessage' ? (
-                    <span className="text-xl">💬</span>
-                  ) : type.includes('payment') ? (
-                    <span className="text-xl">💰</span>
-                  ) : type.includes('booking') ? (
-                    <span className="text-xl">🚗</span>
-                  ) : type === 'fcm_message' ? (
-                    <span className="text-xl">🔔</span>
-                  ) : (
-                    <span className="text-xl">✨</span>
-                  )}
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.162 6 8.375 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
                 </div>
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-sm font-bold text-yellow-400 uppercase tracking-wider">
+                <p className="text-sm font-medium text-white">
                   {title}
                 </p>
-                <p className="mt-1 text-sm text-slate-100 font-medium">
+                <p className="mt-1 text-sm text-slate-200">
                   {message}
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex border-l border-slate-700/50">
+          <div className="flex">
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="w-full border border-transparent rounded-none rounded-r-2xl p-4 flex items-center justify-center text-sm font-bold text-slate-400 hover:text-yellow-400 hover:bg-slate-800 transition-all focus:outline-none"
+              className="w-full border-l border-slate-700 p-4 flex items-center justify-center text-slate-300 hover:text-white transition-colors duration-200 outline-none focus:outline-none"
             >
-              Close
+              <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         </div>
-      ), { duration: 5000 });
-    }
-    
-    // Show browser notification if available and type is FCM
-    if (type === 'fcm_message' && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        body: message,
-        icon: '/favicon.ico',
-        tag: `fcm_${Date.now()}`
-      });
+      ))
     }
   };
 
@@ -256,23 +246,23 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       read: false
     } as Notification;
 
-    setNotifications(prev => [newNotification, ...prev])
+    setNotifications((prev: Notification[]) => [newNotification, ...prev])
   }
 
   const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
+    setNotifications((prev: Notification[]) =>
+      prev.map((n: Notification) => n.id === id ? { ...n, read: true } : n)
     )
   }
 
   const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, read: true }))
+    setNotifications((prev: Notification[]) =>
+      prev.map((n: Notification) => ({ ...n, read: true }))
     )
   }
 
   const clearNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id))
+    setNotifications((prev: Notification[]) => prev.filter((n: Notification) => n.id !== id))
   }
 
   const clearAll = () => {
@@ -280,7 +270,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }
 
   const toggleToastMute = () => {
-    setToastMuted(prev => !prev)
+    setToastMuted((prev: boolean) => !prev)
   }
 
   return (

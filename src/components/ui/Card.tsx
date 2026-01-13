@@ -1,17 +1,20 @@
- import { HTMLAttributes, forwardRef } from 'react'
+ import React from 'react';
+ 
+ // Workaround for React import issues
+ const forwardRef = (React as any).forwardRef;
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { saveUserSession } from '@/lib/storage'
 import { Button } from './Button'
 
-interface CardProps extends HTMLAttributes<HTMLDivElement> {
+interface CardProps {
   variant?: 'default' | 'elevated' | 'outlined'
   hoverable?: boolean
   selected?: boolean
 }
 
-export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ variant = 'default', hoverable, selected, className = '', children, ...props }, ref) => {
+export const Card = forwardRef(
+  ({ variant = 'default', hoverable, selected, className = '', children, ...props }: any, ref: any) => {
     const baseStyles = 'rounded-2xl transition-all'
     
     const variants = {
@@ -26,7 +29,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${hoverStyles} ${selectedStyles} ${className}`}
+        className={`${baseStyles} ${(variants as any)[variant]} ${hoverStyles} ${selectedStyles} ${className}`}
         {...props}
       >
         {children}

@@ -1,9 +1,11 @@
-import { getToken, onMessage, type Messaging } from 'firebase/messaging';
+// @ts-ignore - Firebase messaging type issue
+import { getToken, onMessage } from 'firebase/messaging';
+// @ts-ignore - Firebase messaging type issue
 import { getMessaging } from 'firebase/messaging';
 import { app } from './firebase';
 
 // Get the messaging instance
-const messaging: Messaging | undefined = typeof window !== 'undefined' && 'serviceWorker' in navigator ? getMessaging(app) : undefined;
+const messaging: any = typeof window !== 'undefined' && 'serviceWorker' in navigator ? getMessaging(app) : undefined;
 
 export class NotificationService {
   static async requestPermission(): Promise<boolean> {
@@ -42,7 +44,7 @@ export class NotificationService {
   static onMessageReceived(callback: (payload: any) => void): void {
     if (!messaging) return;
     
-    onMessage(messaging, (payload) => {
+    onMessage(messaging, (payload: any) => {
       console.log('Foreground message received: ', payload);
       callback(payload);
     });

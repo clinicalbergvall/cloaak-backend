@@ -133,7 +133,7 @@ export default function CleanerProfile() {
     if (!file) return
     const reader = new FileReader()
     reader.onloadend = () => {
-      setBeforeAfterForm(prev => ({
+      setBeforeAfterForm((prev: any) => ({
         ...prev,
         [field]: reader.result as string
       }))
@@ -142,9 +142,9 @@ export default function CleanerProfile() {
   }
 
   const handleRemoveCompletedJob = (id: string) => {
-    setProfile(prev => ({
+    setProfile((prev: any) => ({
       ...prev,
-      beforeAfterPhotos: (prev.beforeAfterPhotos || []).filter(photo => photo.id !== id)
+      beforeAfterPhotos: (prev.beforeAfterPhotos || []).filter((photo: any) => photo.id !== id)
     }))
     toast.success('Removed job from gallery')
   }
@@ -156,7 +156,7 @@ export default function CleanerProfile() {
     }
     const services = beforeAfterForm.servicesUsed
       .split(',')
-      .map(service => service.trim())
+      .map((service: any) => service.trim())
       .filter(Boolean)
 
     const newEntry: BeforeAfterPhoto = {
@@ -170,7 +170,7 @@ export default function CleanerProfile() {
       servicesUsed: services,
     }
 
-    setProfile(prev => ({
+    setProfile((prev: any) => ({
       ...prev,
       beforeAfterPhotos: [newEntry, ...(prev.beforeAfterPhotos || [])]
     }))
@@ -249,7 +249,7 @@ export default function CleanerProfile() {
   const toggleService = (service: ServiceCategory) => {
     const services = profile.services || []
     if (services.includes(service)) {
-      setProfile({ ...profile, services: services.filter(s => s !== service) })
+      setProfile({ ...profile, services: services.filter((s: any) => s !== service) })
     } else {
       setProfile({ ...profile, services: [...services, service] })
     }
@@ -366,7 +366,7 @@ export default function CleanerProfile() {
               <Input
                 label="Full Name"
                 value={signupName}
-                onChange={(e) => setSignupName(e.target.value)}
+                onChange={(e: any) => setSignupName(e.target.value)}
                 placeholder="Your full name"
               />
             )}
@@ -374,7 +374,7 @@ export default function CleanerProfile() {
               label="Phone Number"
               type="tel"
               value={loginPhone}
-              onChange={(e) => setLoginPhone(e.target.value)}
+              onChange={(e: any) => setLoginPhone(e.target.value)}
               placeholder="0712345678"
               helperText="Use 07XXXXXXXX or 01XXXXXXXX"
             />
@@ -382,7 +382,7 @@ export default function CleanerProfile() {
               label="Password"
               type="password"
               value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
+              onChange={(e: any) => setLoginPassword(e.target.value)}
               placeholder="Enter your password"
             />
             <div className="flex gap-3">
@@ -501,14 +501,14 @@ export default function CleanerProfile() {
               label="First Name"
               required
               value={profile.firstName}
-              onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+              onChange={(e: any) => setProfile({ ...profile, firstName: e.target.value })}
               placeholder="Enter your first name"
             />
             <Input
               label="Last Name"
               required
               value={profile.lastName}
-              onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+              onChange={(e: any) => setProfile({ ...profile, lastName: e.target.value })}
               placeholder="Enter your last name"
             />
             <Input
@@ -516,28 +516,28 @@ export default function CleanerProfile() {
               type="tel"
               required
               value={profile.phone}
-              onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+              onChange={(e: any) => setProfile({ ...profile, phone: e.target.value })}
               placeholder="+2547XXXXXXXX"
             />
             <Input
               label="Email (Optional)"
               type="email"
               value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+              onChange={(e: any) => setProfile({ ...profile, email: e.target.value })}
               placeholder="your.email@example.com"
             />
             <Input
               label="Address"
               required
               value={profile.address}
-              onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+              onChange={(e: any) => setProfile({ ...profile, address: e.target.value })}
               placeholder="Street Address"
             />
             <Input
               label="City"
               required
               value={profile.city}
-              onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+              onChange={(e: any) => setProfile({ ...profile, city: e.target.value })}
               placeholder="Enter your city"
             />
           </div>
@@ -594,7 +594,7 @@ export default function CleanerProfile() {
                   if (!file) return
                   const reader = new FileReader()
                   reader.onloadend = () => {
-                    setProfile(prev => ({
+                    setProfile((prev: any) => ({
                       ...prev,
                       verification: { ...(prev.verification || { idVerified: false, policeCheck: false, references: [], insuranceCoverage: false }), idDocumentFront: reader.result as string }
                     }))
@@ -617,7 +617,7 @@ export default function CleanerProfile() {
                   if (!file) return
                   const reader = new FileReader()
                   reader.onloadend = () => {
-                    setProfile(prev => ({
+                    setProfile((prev: any) => ({
                       ...prev,
                       verification: { ...(prev.verification || { idVerified: false, policeCheck: false, references: [], insuranceCoverage: false }), idDocumentBack: reader.result as string }
                     }))
@@ -648,7 +648,7 @@ export default function CleanerProfile() {
                   if (!file) return
                   const reader = new FileReader()
                   reader.onloadend = () => {
-                    setProfile(prev => ({ ...prev, passportPhoto: reader.result as string }))
+                    setProfile((prev: any) => ({ ...prev, passportPhoto: reader.result as string }))
                   }
                   reader.readAsDataURL(file)
                 }}
@@ -669,7 +669,7 @@ export default function CleanerProfile() {
                   if (!file) return
                   const reader = new FileReader()
                   reader.onloadend = () => {
-                    setProfile(prev => ({ ...prev, fullBodyPhoto: reader.result as string }))
+                    setProfile((prev: any) => ({ ...prev, fullBodyPhoto: reader.result as string }))
                   }
                   reader.readAsDataURL(file)
                 }}

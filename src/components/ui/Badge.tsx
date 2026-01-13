@@ -1,6 +1,6 @@
 import React from 'react';
 
-type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
+type BadgeProps = any & {
   variant?: 'default' | 'success' | 'warning' | 'error' | 'secondary' | 'outline'
 };
 

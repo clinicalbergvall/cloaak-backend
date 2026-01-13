@@ -4,9 +4,7 @@ const path = require("path");
 
 
 module.exports = defineConfig({
-  plugins: [react({
-    jsxRuntime: 'classic',
-  })],
+  plugins: [react()],
 
   resolve: {
     alias: {
@@ -66,6 +64,13 @@ module.exports = defineConfig({
     port: 5173,
     strictPort: false,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 
   preview: {

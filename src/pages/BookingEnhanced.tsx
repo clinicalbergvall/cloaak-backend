@@ -29,6 +29,7 @@ import { formatCurrency, formatPhoneNumber } from "@/lib/utils";
 import {
   saveUserSession,
   loadUserSession,
+  clearUserSession,
 } from "@/lib/storage";
 import { getCurrentLocation, getLocationPermissionStatus, reverseGeocode } from "@/lib/location";
 import authAPI from "@/lib/auth-api";
@@ -183,6 +184,67 @@ export default function BookingEnhanced() {
     return () => observer.disconnect()
   }, [])
 
+  const handleUserTypeSelect = (type: UserType) => {
+    setUserType(type);
+    if (type === "cleaner") {
+      rememberSession({ userType: "cleaner" });
+    }
+  };
+
+  const handleGoBack = () => {
+    // Only clear session when going back from step 1 (account selection) to the initial screen
+    // Don't clear session when moving between booking steps for users who are already logged in
+    if (step === 1) {
+      // Check if the user was already logged in before entering the booking flow
+      const savedSession = loadUserSession();
+      if (savedSession && savedSession.userType) {
+        // User was already logged in, don't clear their session
+        setStep(step - 1);
+      } else {
+        // User was not logged in, clear session to go back to initial screen
+        clearUserSession();
+        setUserType(null);
+      }
+    } else {
+      setStep(step - 1);
+    }
+  };
+
+  // Handle hardware back button for booking flow
+  useEffect(() => {
+    const handleStepBack = () => {
+      // Prevent default back navigation if we're in a middle step
+      if (step > 1) {
+        // Call the same logic as the back button in the UI
+        handleGoBack();
+        // Stop propagation by returning false (handled by custom event system)
+        return false;
+      }
+      // Return true if we allow default navigation (at step 1)
+      return true;
+    };
+
+    const handleBookingStepBack = (e: Event) => {
+      const result = handleStepBack();
+      // Since custom events can't return values directly, we'll use the event's defaultPrevented
+      // to signal whether the event was handled
+      if (!result) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('booking:stepBack', handleBookingStepBack);
+    
+    return () => {
+      document.removeEventListener('booking:stepBack', handleBookingStepBack);
+    };
+  }, [step, userType]);
+
+  // Handle hardware back button for booking flow
+
+
+
+
   const rememberSession = (payload: {
     userType: "client" | "cleaner";
     name?: string;
@@ -199,13 +261,6 @@ export default function BookingEnhanced() {
   const roleFromUserType = (u: UserType): "client" | "cleaner" => {
     return u === "cleaner" ? "cleaner" : "client"
   }
-
-  const handleUserTypeSelect = (type: UserType) => {
-    setUserType(type);
-    if (type === "cleaner") {
-      rememberSession({ userType: "cleaner" });
-    }
-  };
 
   const extrasEnabled = serviceCategory === "car-detailing";
 
@@ -224,7 +279,7 @@ export default function BookingEnhanced() {
   const activeStages = useMemo(
     () =>
       stageDefinitions.filter(
-        (stage) => extrasEnabled || stage.id !== "extras",
+        (stage: any) => extrasEnabled || stage.id !== "extras"
       ),
     [stageDefinitions, extrasEnabled],
   );
@@ -239,7 +294,7 @@ export default function BookingEnhanced() {
   }, [step]);
 
   const currentStageIndex = activeStages.findIndex(
-    (stage) => stage.id === currentStageId,
+    (stage: any) => stage.id === currentStageId
   );
   const normalizedStageIndex = currentStageIndex === -1 ? 0 : currentStageIndex;
 
@@ -264,7 +319,7 @@ export default function BookingEnhanced() {
       : 0;
 
 
-  const carAddonsTotal = selectedCarExtras.reduce((total, extraId) => {
+  const carAddonsTotal = selectedCarExtras.reduce((total: number, extraId: string) => {
     const extra = CAR_DETAILING_EXTRAS.find((e) => e.id === extraId);
     return total + (extra?.price ?? 0);
   }, 0);
@@ -388,7 +443,7 @@ export default function BookingEnhanced() {
 
   const handleLocationChange = async (lat: number, lng: number) => {
     // Update coordinates immediately for responsiveness
-    setLocation((prev) => ({
+    setLocation((prev: any) => ({
       ...prev,
       coordinates: [lat, lng],
     }));
@@ -396,7 +451,7 @@ export default function BookingEnhanced() {
     try {
       // Reverse geocode to get the new address
       const address = await reverseGeocode(lat, lng);
-      setLocation((prev) => ({
+      setLocation((prev: any) => ({
         ...prev,
         coordinates: [lat, lng],
         address: address,
@@ -514,13 +569,7 @@ export default function BookingEnhanced() {
       <div className="mb-0">
         {step > 1 && (
           <button
-            onClick={() => {
-              if (step === 2) {
-                setUserType(null);
-              } else {
-                setStep(step - 1);
-              }
-            }}
+            onClick={handleGoBack}
             className="text-gray-600 hover:text-gray-900 mb-0 flex items-center gap-2"
           >
             <svg
@@ -556,462 +605,222 @@ export default function BookingEnhanced() {
       </div>
 
       { }
-      <div className="space-y-2 mb-3">
-        <ProgressBar value={progress} className="mb-1" />
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {activeStages.map((stage, index) => {
-            const status =
-              index < normalizedStageIndex
-                ? "complete"
-                : index === normalizedStageIndex
-                  ? "current"
-                  : "upcoming";
-            const statusClasses =
-              status === "complete"
-                ? "bg-black text-white border-black shadow-sm"
-                : status === "current"
-                  ? "bg-yellow-100 text-yellow-900 border-yellow-300"
-                  : "bg-gray-100 text-gray-400 border-gray-200";
-
-            return (
-              <div
-                key={stage.id}
-                className={`min-w-[120px] text-center px-3 py-2 rounded-xl border text-xs sm:text-sm font-semibold ${statusClasses}`}
-              >
-                <span>{stage.label}</span>
-                {stage.optional && (
-                  <span className="block text-[10px] uppercase tracking-wide opacity-80">
-                    Optional
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       { }
       {
-        step === 1 && (
+        step === 3 && (
           <div className="space-y-4">
-            {isSignup && (
-              <Input
-                label="Full Name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Griffins Mhogo"
-                helperText="Enter your full name"
-              />
-            )}
-            <Input
-              label="Phone Number"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="0712345678"
-              helperText="Use your Safaricom number registered for M‑Pesa (07XXXXXXXX or 01XXXXXXXX)"
-            />
-
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              helperText={
-                isSignup ? "Minimum 6 characters" : "Enter your password"
-              }
-            />
-            <Button
-              fullWidth
-              disabled={isSubmitting}
-              onClick={async () => {
-
-                if (!password || password.length < 6) {
-                  toast.error("Password must be at least 6 characters");
-                  return;
-                }
-
-
-
-                try {
-                  setIsSubmitting(true);
-
-                  let response;
-                  if (isSignup) {
-                    const normalizedPhone = (() => {
-                      const p = (phone || '').replace(/\s+/g, '')
-                      const m = p.match(/^\+?254([17]\d{8})$/)
-                      if (m) return `0${m[1]}`
-                      return p
-                    })()
-                    response = await authAPI.register({
-                      name,
-                      phone: normalizedPhone,
-                      password,
-                      role: roleFromUserType(userType),
-                    });
-                  } else {
-
-                    const p = (phone || '').replace(/\s+/g, '')
-                    const m = p.match(/^\+?254([17]\d{8})$/)
-                    const normalized = m ? `0${m[1]}` : p
-                    response = await authAPI.login(normalized, password);
-                  }
-
-                  if (response.success && response.user) {
-
-
-                    toast.success(
-                      isSignup
-                        ? "Account created successfully! 🎉"
-                        : "Signed in successfully!",
-                    );
-                    setStep(2);
-
-
-                    rememberSession({
-                      userType: "client",
-                      name: response.user?.name || name.trim() || "Valued Client",
-                      phone: response.user?.phone || phone,
-                    });
-                  } else {
-                    toast.error(
-                      response.message || "Invalid phone number or password",
-                    );
-                  }
-                } catch (error: any) {
-                  logger.error("Auth error:", error);
-                  toast.error(
-                    error.message ||
-                    "Authentication failed. Please check your credentials.",
-                  );
-                } finally {
-                  setIsSubmitting(false);
-                }
-              }}
-              className="mt-6"
-            >
-              {isSignup ? "Sign up" : "Sign in"}
-            </Button>
-            <p className="text-center text-sm text-gray-600 mt-4">
-              {isSignup ? (
-                <>
-                  Already have an account?{" "}
-                  <span
-                    className="text-yellow-600 font-semibold cursor-pointer hover:text-yellow-700"
-                    onClick={() => setIsSignup(false)}
-                  >
-                    Sign in instead
-                  </span>
-                </>
-              ) : (
-                <>
-                  Don't have an account?{" "}
-                  <span
-                    className="text-yellow-600 font-semibold cursor-pointer hover:text-yellow-700"
-                    onClick={() => setIsSignup(true)}
-                  >
-                    Sign up instead
-                  </span>
-                </>
-              )}
-            </p>
-          </div>
-        )
-      }
-
-
-
-      {/* Step 2: Vehicle Selection */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <Card className="p-6 mb-6">
-            <div className="-mt-2 -mx-2 mb-4">
-              <video
-                className="w-full h-48 object-cover rounded-xl"
-                src={"/assets/detailing/6873165-mobile-720p.mp4"}
-                ref={carVideoRef}
-                muted
-                loop
-                playsInline
-                preload="none"
-                autoPlay
-                controls={false}
-                poster="/assets/images/premium-foam-wash.jpg"
-              />
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Service Package</h3>
+              <p className="text-gray-600 mb-4">Choose the detailing package that best fits your needs</p>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="text-3xl">🚗</div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  Car Detailing
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Professional car wash and detailing services
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <p className="font-semibold text-gray-900 mb-3">
-            Select Vehicle Type:
-          </p>
-          <div className="grid gap-3">
-            {VEHICLE_CATEGORIES.map((cat) => (
-              <Card
-                key={cat.id}
-                variant={vehicleType === cat.id ? "default" : "outlined"}
-                hoverable
-                selected={vehicleType === cat.id}
-                className="p-4 cursor-pointer"
-                onClick={() => {
-                  setVehicleType(cat.id);
-                  setStep(3); // Auto-progress to package selection
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{cat.icon}</span>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      {cat.name}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {cat.description}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          <div className="flex gap-3 mt-6">
-            <Button variant="outline" onClick={() => setStep(1)} fullWidth>
-              Back
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Package Selection */}
-      {step === 3 && vehicleType && (
-        <div className="space-y-4">
-          <div className="mb-4">
-            <p className="text-sm font-medium text-gray-600">Selected Vehicle:</p>
-            <div className="flex items-center gap-2 mt-1 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-              <span className="text-xl">
-                {VEHICLE_CATEGORIES.find(c => c.id === vehicleType)?.icon}
-              </span>
-              <span className="font-bold text-gray-900">
-                {VEHICLE_CATEGORIES.find(c => c.id === vehicleType)?.name}
-              </span>
-              <button
-                onClick={() => setStep(2)}
-                className="ml-auto text-xs text-yellow-600 font-bold hover:underline"
-              >
-                Change
-              </button>
-            </div>
-          </div>
-
-          <p className="font-semibold text-gray-900 mb-3">
-            Select Detailing Package:
-          </p>
-          <div className="grid gap-3">
-            {CAR_SERVICE_PACKAGES.map((pkg) => {
-              // Calculate price for display
-              let displayPrice = 0;
-              if (pkg.id === "PAINT-CORRECTION") {
-                // Show Stage 1 price as base
-                displayPrice = getCarDetailingPrice(
-                  vehicleType as VehicleType,
-                  pkg.id,
-                  "STAGE-1",
-                  midSUVTier,
-                );
-              } else if (pkg.id === "FLEET-PACKAGE") {
-                // Show per-car price
-                displayPrice = getCarDetailingPrice(
-                  vehicleType as VehicleType,
-                  pkg.id,
-                  undefined,
-                  midSUVTier,
-                  1,
-                );
-              } else {
-                displayPrice = getCarDetailingPrice(
-                  vehicleType as VehicleType,
-                  pkg.id,
-                  undefined,
-                  midSUVTier,
-                );
-              }
-
-              return (
-                <Card
-                  key={pkg.id}
-                  variant={
-                    carServicePackage === pkg.id
-                      ? "default"
-                      : "outlined"
-                  }
-                  hoverable
-                  selected={carServicePackage === pkg.id}
-                  className="p-4 cursor-pointer"
-                  onClick={() => {
-                    setCarServicePackage(pkg.id);
-                    // Reset dependent fields
-                    if (pkg.id !== "PAINT-CORRECTION")
-                      setPaintStage("");
-                    if (pkg.id !== "FLEET-PACKAGE") setFleetCarCount(5);
-
-                    // Auto-progress if not a special package
-                    if (pkg.id !== "PAINT-CORRECTION" && pkg.id !== "FLEET-PACKAGE") {
-                      setStep(4);
-                    }
-                  }}
-                >
-                  <div className="-mt-2 -mx-2 mb-4">
-                    {pkg.id !== "FLEET-PACKAGE" && ( // Don't show media for fleet package
-                      PACKAGE_VIDEOS[pkg.id] && !failedPackage[pkg.id] ? (
-                        <video
-                          className="w-full h-32 sm:h-40 object-cover rounded-xl"
-                          src={getVideoSrc(PACKAGE_VIDEOS[pkg.id])}
-                          muted
-                          loop
-                          playsInline
-                          preload="none"
-                          autoPlay
-                          controls={false}
-                          poster={PACKAGE_FALLBACK_IMAGES[pkg.id]}
-                          onError={() => setFailedPackage((p) => ({ ...p, [pkg.id]: true }))}
-                        />
-                      ) : PACKAGE_FALLBACK_IMAGES[pkg.id] ? (
-                        <img
-                          src={PACKAGE_FALLBACK_IMAGES[pkg.id]}
-                          alt={pkg.name}
-                          className="w-full h-32 sm:h-40 object-cover rounded-xl"
-                          loading="lazy"
-                        />
-                      ) : null
-                    )}
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        {pkg.name}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {pkg.description}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        ⏱️ {pkg.duration}
-                      </p>
-                    </div>
-                    <span className="font-bold text-yellow-600 min-w-[140px] text-left whitespace-nowrap">
-                      {pkg.id === "FLEET-PACKAGE"
-                        ? `${formatCurrency(displayPrice)}/car`
-                        : formatCurrency(displayPrice)}
-                    </span>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          { }
-          {carServicePackage === "PAINT-CORRECTION" && (
-            <div className="mt-6">
-              <p className="font-semibold text-gray-900 mb-3">
-                Select Paint Correction Stage:
-              </p>
-              <div className="grid gap-3">
-                {PAINT_CORRECTION_STAGES.map((stage) => {
-                  const stagePrice = getCarDetailingPrice(
-                    vehicleType as VehicleType,
-                    "PAINT-CORRECTION",
-                    stage.id,
-                    midSUVTier,
-                  );
+            
+            <div className="space-y-2 mb-3">
+              <ProgressBar value={progress} className="mb-1" />
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {activeStages.map((stage: any, index: number) => {
+                  const status =
+                    index < normalizedStageIndex
+                      ? "complete"
+                      : index === normalizedStageIndex
+                        ? "current"
+                        : "upcoming";
+                  const statusClasses =
+                    status === "complete"
+                      ? "bg-black text-white border-black shadow-sm"
+                      : status === "current"
+                        ? "border-2 border-yellow-400 shadow-sm"
+                        : "border border-gray-200 opacity-60";
+                  
                   return (
-                    <Card
+                    <button
                       key={stage.id}
-                      variant={
-                        paintStage === stage.id ? "default" : "outlined"
-                      }
-                      hoverable
-                      selected={paintStage === stage.id}
-                      className="p-4 cursor-pointer"
-                      onClick={() => setPaintStage(stage.id)}
+                      className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all ${statusClasses}`}
+                      onClick={() => setStep(index + 1)}
+                      disabled={index > normalizedStageIndex}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h5 className="font-semibold text-gray-900">
-                            {stage.name}
-                          </h5>
-                          <p className="text-sm text-gray-600">
-                            {stage.description}
-                          </p>
-                        </div>
-                        <span className="font-bold text-yellow-600">
-                          {formatCurrency(stagePrice)}
-                        </span>
-                      </div>
-                    </Card>
+                      {stage.label}
+                      {status === "complete" && " ✓"}
+                    </button>
                   );
                 })}
               </div>
             </div>
-          )}
 
-          { }
-          {carServicePackage === "FLEET-PACKAGE" && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="font-semibold text-gray-900 mb-3">
-                Number of Cars:
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFleetCarCount(prev => Math.max(2, prev - 1))}
-                  className="w-12 h-12 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xl font-bold hover:bg-gray-50 active:scale-95 transition-all"
-                >
-                  -
-                </button>
-                <div className="flex-1 text-center">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {fleetCarCount}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFleetCarCount(prev => Math.min(100, prev + 1))}
-                  className="w-12 h-12 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xl font-bold hover:bg-gray-50 active:scale-95 transition-all"
-                >
-                  +
-                </button>
-              </div>
-              <p className="text-sm text-gray-600 mt-2 text-center">
-                Total: {formatCurrency(getCarDetailingPrice(vehicleType as VehicleType, "FLEET-PACKAGE", undefined, midSUVTier, fleetCarCount))}
-              </p>
+            <div className="space-y-4">
+              {CAR_SERVICE_PACKAGES.map((pkg) => {
+                const displayPrice = getCarDetailingPrice(
+                  vehicleType as VehicleType,
+                  pkg.id,
+                  paintStage || undefined,
+                  midSUVTier,
+                  fleetCarCount,
+                );
+                
+                const status =
+                  carServicePackage === pkg.id
+                    ? "current"
+                    : "upcoming";
+                const statusClasses =
+                  status === "current"
+                    ? "border-2 border-yellow-400 shadow-sm"
+                    : "border border-gray-200 opacity-60";
+                
+                return (
+                  <Card
+                    key={pkg.id}
+                    variant={carServicePackage === pkg.id ? "default" : "outlined"}
+                    hoverable
+                    selected={carServicePackage === pkg.id}
+                    className={`p-4 cursor-pointer transition-all ${statusClasses}`}
+                    onClick={() => {
+                      setCarServicePackage(pkg.id);
+                      // Auto-progress if not a special package
+                      if (pkg.id !== "PAINT-CORRECTION" && pkg.id !== "FLEET-PACKAGE") {
+                        setStep(4);
+                      }
+                    }}
+                  >
+                    <div className="-mt-2 -mx-2 mb-4">
+                      {pkg.id !== "FLEET-PACKAGE" && ( // Don't show media for fleet package
+                        PACKAGE_VIDEOS[pkg.id] && !failedPackage[pkg.id] ? (
+                          <video
+                            className="w-full h-32 sm:h-40 object-cover rounded-xl"
+                            src={getVideoSrc(PACKAGE_VIDEOS[pkg.id])}
+                            muted
+                            loop
+                            playsInline
+                            preload="none"
+                            autoPlay
+                            controls={false}
+                            poster={PACKAGE_FALLBACK_IMAGES[pkg.id]}
+                            onError={() => setFailedPackage((p: any) => ({ ...p, [pkg.id]: true }))}
+                          />
+                        ) : PACKAGE_FALLBACK_IMAGES[pkg.id] ? (
+                          <img
+                            src={PACKAGE_FALLBACK_IMAGES[pkg.id]}
+                            alt={pkg.name}
+                            className="w-full h-32 sm:h-40 object-cover rounded-xl"
+                            loading="lazy"
+                          />
+                        ) : null
+                      )}
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">
+                          {pkg.name}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {pkg.description}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          ⏱️ {pkg.duration}
+                        </p>
+                      </div>
+                      <span className="font-bold text-yellow-600 min-w-[140px] text-left whitespace-nowrap">
+                        {pkg.id === "FLEET-PACKAGE"
+                          ? `${formatCurrency(displayPrice)}/car`
+                          : formatCurrency(displayPrice)}
+                      </span>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
-          )}
 
-          <div className="flex gap-3 mt-6">
-            <Button variant="outline" onClick={() => setStep(2)} fullWidth>
-              Back
-            </Button>
-            <Button
-              onClick={() => setStep(4)}
-              fullWidth
-              disabled={!carServicePackage}
-            >
-              Continue
-            </Button>
+            { }
+            {carServicePackage === "PAINT-CORRECTION" && (
+              <div className="mt-6">
+                <p className="font-semibold text-gray-900 mb-3">
+                  Select Paint Correction Stage:
+                </p>
+                <div className="grid gap-3">
+                  {PAINT_CORRECTION_STAGES.map((stage) => {
+                    const stagePrice = getCarDetailingPrice(
+                      vehicleType as VehicleType,
+                      "PAINT-CORRECTION",
+                      stage.id,
+                      midSUVTier,
+                    );
+                    return (
+                      <Card
+                        key={stage.id}
+                        variant={
+                          paintStage === stage.id ? "default" : "outlined"
+                        }
+                        hoverable
+                        selected={paintStage === stage.id}
+                        className="p-4 cursor-pointer"
+                        onClick={() => setPaintStage(stage.id)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h5 className="font-semibold text-gray-900">
+                              {stage.name}
+                            </h5>
+                            <p className="text-sm text-gray-600">
+                              {stage.description}
+                            </p>
+                          </div>
+                          <span className="font-bold text-yellow-600">
+                            {formatCurrency(stagePrice)}
+                          </span>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            { }
+            {carServicePackage === "FLEET-PACKAGE" && (
+              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="font-semibold text-gray-900 mb-3">
+                  Number of Cars:
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFleetCarCount((prev: number) => Math.max(2, prev - 1))}
+                    className="w-12 h-12 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xl font-bold hover:bg-gray-50 active:scale-95 transition-all"
+                  >
+                    -
+                  </button>
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-bold text-gray-900">
+                      {fleetCarCount}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFleetCarCount((prev: number) => Math.min(100, prev + 1))}
+                    className="w-12 h-12 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xl font-bold hover:bg-gray-50 active:scale-95 transition-all"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-2 text-center">
+                  Total: {formatCurrency(getCarDetailingPrice(vehicleType as VehicleType, "FLEET-PACKAGE", undefined, midSUVTier, fleetCarCount))}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" onClick={() => setStep(2)} fullWidth>
+                Back
+              </Button>
+              <Button
+                onClick={() => setStep(4)}
+                fullWidth
+                disabled={!carServicePackage}
+              >
+                Continue
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       { }
       {
@@ -1072,7 +881,7 @@ export default function BookingEnhanced() {
                               ]);
                             } else {
                               setSelectedCarExtras(
-                                selectedCarExtras.filter((id) => id !== extra.id),
+                                selectedCarExtras.filter((id: string) => id !== extra.id)
                               );
                             }
                           }}
@@ -1095,9 +904,9 @@ export default function BookingEnhanced() {
                   Selected Extras ({selectedCarExtras.length})
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedCarExtras.map((extraId) => {
+                  {selectedCarExtras.map((extraId: string) => {
                     const extra = CAR_DETAILING_EXTRAS.find(
-                      (e) => e.id === extraId,
+                      (e: any) => e.id === extraId,
                     );
                     return extra ? (
                       <span
@@ -1153,7 +962,7 @@ export default function BookingEnhanced() {
               <Input
                 placeholder="Or enter address manually"
                 value={location.manualAddress || ""}
-                onChange={(e) =>
+                onChange={(e: any) =>
                   setLocation({ ...location, manualAddress: e.target.value })
                 }
               />
@@ -1163,6 +972,7 @@ export default function BookingEnhanced() {
                 height="200px"
                 draggable={true}
                 onLocationChange={handleLocationChange}
+                showMap={false}
               />
 
               {(location.address || location.manualAddress || location.coordinates) && (
@@ -1225,13 +1035,13 @@ export default function BookingEnhanced() {
                   type="date"
                   label="Date"
                   value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
+                  onChange={(e: any) => setScheduledDate(e.target.value)}
                 />
                 <Input
                   type="time"
                   label="Time"
                   value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
+                  onChange={(e: any) => setScheduledTime(e.target.value)}
                 />
               </div>
             )}
@@ -1277,6 +1087,13 @@ export default function BookingEnhanced() {
                 </div>
 
                 <div className="flex justify-between">
+                  <span className="text-gray-600">Location:</span>
+                  <span className="font-semibold">
+                    {location.address || location.manualAddress || (location.coordinates ? `${location.coordinates[0].toFixed(6)}, ${location.coordinates[1].toFixed(6)}` : 'No location set')}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
                   <span className="text-gray-600">Type:</span>
                   <span className="font-semibold">
                     {
@@ -1299,9 +1116,9 @@ export default function BookingEnhanced() {
                   <div>
                     <span className="text-gray-600">Add-ons:</span>
                     <div className="mt-1 flex flex-wrap gap-2">
-                      {selectedCarExtras.map((id) => {
+                      {selectedCarExtras.map((id: string) => {
                         const addon = CAR_DETAILING_EXTRAS.find(
-                          (s) => s.id === id,
+                          (s: any) => s.id === id,
                         );
                         return addon ? (
                           <span

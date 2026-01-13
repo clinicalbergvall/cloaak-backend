@@ -40,8 +40,8 @@ export default function LiveTracking({ bookingId, clientLocation }: LiveTracking
 
 
     const interval = setInterval(() => {
-      setTracking(prev => prev ? {
-        ...prev,
+      setTracking((prev: TrackingData | null) => prev ? {
+        ...(prev as TrackingData),
         lastUpdated: new Date().toISOString()
       } : null)
     }, 10000)
@@ -100,7 +100,7 @@ export default function LiveTracking({ bookingId, clientLocation }: LiveTracking
       description: 'Service has been completed'
     },
   }
-  const config = statusConfig[tracking.status] || statusConfig['confirmed']
+  const config = (statusConfig as any)[tracking.status] || (statusConfig as any)['confirmed']
 
   return (
     <div className="space-y-4">

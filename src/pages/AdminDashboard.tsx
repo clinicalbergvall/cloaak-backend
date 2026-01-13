@@ -202,18 +202,18 @@ export default function AdminDashboard() {
   }, [pending, approved])
 
   const filteredList = (selectedTab === 'pending' ? pending : approved)
-    .filter(profile => `${profile.firstName} ${profile.lastName}`.toLowerCase().includes(search.toLowerCase()))
-    .filter(profile => cityFilter === 'all' || profile.city === cityFilter)
+    .filter((profile: CleanerProfile) => `${profile.firstName} ${profile.lastName}`.toLowerCase().includes(search.toLowerCase()))
+    .filter((profile: CleanerProfile) => cityFilter === 'all' || profile.city === cityFilter)
 
 
 
   const monitoringSignals = useMemo(() => {
     const missingDocs = pending.filter(
-      cleaner => !cleaner.passportPhoto || !cleaner.fullBodyPhoto || !cleaner.verification?.idDocumentFront
+      (cleaner: CleanerProfile) => !cleaner.passportPhoto || !cleaner.fullBodyPhoto || !cleaner.verification?.idDocumentFront
     ).length
 
-    const lowRatings = approved.filter(cleaner => (cleaner.rating || 0) < 3).length
-    const idleCleaners = approved.filter(cleaner => (cleaner.totalJobs || 0) === 0).length
+    const lowRatings = approved.filter((cleaner: CleanerProfile) => (cleaner.rating || 0) < 3).length
+    const idleCleaners = approved.filter((cleaner: CleanerProfile) => (cleaner.totalJobs || 0) === 0).length
 
     return [
       { label: 'Docs Missing', value: missingDocs, subtitle: 'Need follow-up', tone: 'warning' as const },
@@ -289,15 +289,15 @@ export default function AdminDashboard() {
                 <Input
                   placeholder="Search cleaner name"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                   className="min-w-[220px] border-slate-800 bg-slate-900/60 text-slate-100 placeholder:text-slate-500"
                 />
                 <select
                   value={cityFilter}
-                  onChange={(e) => setCityFilter(e.target.value)}
+                  onChange={(e: any) => setCityFilter(e.target.value)}
                   className="rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-2 text-sm text-slate-200 focus:outline-none"
                 >
-                  {uniqueCities.map((city) => (
+                  {uniqueCities.map((city: string) => (
                     <option key={city} value={city} className="bg-slate-900 text-slate-100">
                       {city === 'all' ? 'All Cities' : city}
                     </option>
@@ -312,7 +312,7 @@ export default function AdminDashboard() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {filteredList.map((profile) => (
+                {filteredList.map((profile: CleanerProfile) => (
                   <CleanerCard
                     key={profile.id}
                     profile={profile}
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
                 <Card className="mt-4 bg-slate-900/50 border border-slate-800 text-center text-slate-400">No bookings</Card>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {bookings.map((b) => (
+                  {bookings.map((b: BookingData) => (
                     <div key={b._id || b.id} className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div>
@@ -380,14 +380,14 @@ export default function AdminDashboard() {
                   <button
                     className="rounded-xl border border-slate-800 px-3 py-1 text-xs text-slate-200 disabled:opacity-40"
                     disabled={bookingPage <= 1}
-                    onClick={() => setBookingPage((p) => Math.max(1, p - 1))}
+                    onClick={() => setBookingPage((p: number) => Math.max(1, p - 1))}
                   >
                     Prev
                   </button>
                   <button
                     className="rounded-xl border border-slate-800 px-3 py-1 text-xs text-slate-200 disabled:opacity-40"
                     disabled={bookingPage >= bookingPages}
-                    onClick={() => setBookingPage((p) => Math.min(bookingPages, p + 1))}
+                    onClick={() => setBookingPage((p: number) => Math.min(bookingPages, p + 1))}
                   >
                     Next
                   </button>

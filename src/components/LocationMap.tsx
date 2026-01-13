@@ -18,6 +18,7 @@ interface LocationMapProps {
   height?: string
   draggable?: boolean
   onLocationChange?: (lat: number, lng: number) => void
+  showMap?: boolean
 }
 
 export default function LocationMap({
@@ -25,7 +26,8 @@ export default function LocationMap({
   title = "Client Location",
   height = "300px",
   draggable = false,
-  onLocationChange
+  onLocationChange,
+  showMap = true
 }: LocationMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -166,44 +168,59 @@ export default function LocationMap({
   }, [location, title, draggable, onLocationChange]);
 
   if (!hasValidCoordinates && !location.manualAddress && !location.address) {
-    return (
-      <Card className="p-4">
-        <div className="mb-3">
-          <h3 className="font-semibold text-gray-900">{title}</h3>
-          <p className="text-sm text-gray-600 mt-1">No location data available</p>
-        </div>
-        <div className="rounded-lg overflow-hidden bg-gray-100 z-0 relative" style={{ height: height }}>
-          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-500">
-            <p>No location to display</p>
+    if (showMap) {  // Only show the fallback UI if showMap is true
+      return (
+        <Card className="p-4">
+          <div className="mb-3">
+            <h3 className="font-semibold text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-600 mt-1">No location data available</p>
           </div>
-        </div>
-      </Card>
-    );
+          <div className="rounded-lg overflow-hidden bg-gray-100 z-0 relative" style={{ height: height }}>
+            <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-500">
+              <p>No location to display</p>
+            </div>
+          </div>
+        </Card>
+      );
+    } else {
+      // If showMap is false and no location data, just show the title and message
+      return (
+        <Card className="p-4">
+          <div className="mb-3">
+            <h3 className="font-semibold text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-600 mt-1">No location data available</p>
+          </div>
+        </Card>
+      );
+    }
   }
 
   return (
-    <Card className="p-4">
+    <Card className="p4">
       <div className="mb-3">
         <h3 className="font-semibold text-gray-900">{title}</h3>
         <p className="text-sm text-gray-600 mt-1">{displayAddress}</p>
       </div>
 
-      <div
-        className="rounded-lg overflow-hidden bg-gray-100 z-0 relative"
-        style={{ height: height }}
-      >
-        <div 
-          ref={mapRef} 
-          className="w-full h-full"
-          style={{ minHeight: height }}
+      {/* Conditionally render the map only if showMap prop is true */}
+      {showMap && (
+        <div
+          className="rounded-lg overflow-hidden bg-gray-100 z-0 relative"
+          style={{ height: height }}
         >
-          {!mapLoaded && !error && (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            </div>
-          )}
+          <div 
+            ref={mapRef} 
+            className="w-full h-full"
+            style={{ minHeight: height }}
+          >
+            {!mapLoaded && !error && (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {hasValidCoordinates && (
         <div className="flex items-center justify-between mt-2">

@@ -79,8 +79,8 @@ export default function CompletedBookings() {
       setRatingBookingId(null);
 
       
-      setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, rating, review } : b)),
+      setBookings((prev: any) =>
+        prev.map((b: any) => (b.id === bookingId ? { ...b, rating, review } : b))
       );
     } catch (error) {
       console.error("Error submitting rating:", error);
@@ -142,8 +142,8 @@ export default function CompletedBookings() {
     );
   }
 
-  const unpaidBookings = bookings.filter((b) => !b.paid);
-  const paidBookings = bookings.filter((b) => b.paid);
+  const unpaidBookings = bookings.filter((b: any) => !b.paid);
+  const paidBookings = bookings.filter((b: any) => b.paid);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
@@ -165,7 +165,7 @@ export default function CompletedBookings() {
               ⚠️ Pending Payment ({unpaidBookings.length})
             </h2>
             <div className="space-y-4">
-              {unpaidBookings.map((booking) => (
+              {unpaidBookings.map((booking: any) => (
                 <BookingCard
                   key={booking.id}
                   booking={booking}
@@ -189,7 +189,7 @@ export default function CompletedBookings() {
               Paid Services ({paidBookings.length})
             </h2>
             <div className="space-y-4">
-              {paidBookings.map((booking) => (
+              {paidBookings.map((booking: any) => (
                 <BookingCard key={booking.id} booking={booking} isPaid />
               ))}
             </div>

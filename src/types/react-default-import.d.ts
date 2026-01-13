@@ -16,7 +16,8 @@ declare global {
       FunctionComponent,
       PropsWithChildren,
       ReactPortal,
-      ErrorInfo
+      ErrorInfo,
+      ButtonHTMLAttributes
     } from 'react';
 
     // Export hooks as properties of React for default import usage
@@ -36,6 +37,7 @@ declare global {
     export const useSyncExternalStore: typeof ReactNamespace.useSyncExternalStore;
     export const useInsertionEffect: typeof ReactNamespace.useInsertionEffect;
     export const Suspense: typeof ReactNamespace.Suspense;
+    export const forwardRef: typeof ReactNamespace.forwardRef;
   }
 }
 

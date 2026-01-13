@@ -47,7 +47,7 @@ export default function ServiceShowcase({ serviceCategory = 'car-detailing' }: S
   const items = media[active]
 
   
-  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
+  const handleVideoClick = (e: any) => {
     const video = e.currentTarget;
     if (video.paused) {
       video.play();
@@ -56,7 +56,7 @@ export default function ServiceShowcase({ serviceCategory = 'car-detailing' }: S
     }
   };
 
-  const handleModalVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
+  const handleModalVideoClick = (e: any) => {
     const video = e.currentTarget;
     if (video.paused) {
       video.play();
@@ -66,14 +66,14 @@ export default function ServiceShowcase({ serviceCategory = 'car-detailing' }: S
   };
 
   const goNext = () => {
-    setOpenIndex((prev) => {
+    setOpenIndex((prev: number | null) => {
       if (prev === null) return null
       return (prev + 1) % items.length
     })
   }
 
   const goPrev = () => {
-    setOpenIndex((prev) => {
+    setOpenIndex((prev: number | null) => {
       if (prev === null) return null
       return (prev - 1 + items.length) % items.length
     })
@@ -132,7 +132,7 @@ export default function ServiceShowcase({ serviceCategory = 'car-detailing' }: S
                 preload="none"
                 controls={false}
                 onClick={handleVideoClick}
-                onError={() => setFailed((f) => ({ ...f, [m.id]: true }))}
+                onError={() => setFailed((f: Record<number, boolean>) => ({ ...f, [m.id]: true }))}
               />
             )}
             <div className="absolute inset-x-0 bottom-0 p-2 text-white text-xs bg-gradient-to-t from-black/60 via-black/20 to-transparent">
@@ -162,7 +162,7 @@ export default function ServiceShowcase({ serviceCategory = 'car-detailing' }: S
                 playsInline
                 preload="none"
                 onClick={handleModalVideoClick}
-                onError={() => setFailed((f) => ({ ...f, [items[openIndex].id]: true }))}
+                onError={() => setFailed((f: Record<number, boolean>) => ({ ...f, [items[openIndex].id]: true }))}
               />
             )}
             <div className="absolute inset-y-0 left-2 right-2 flex items-center justify-between pointer-events-none">

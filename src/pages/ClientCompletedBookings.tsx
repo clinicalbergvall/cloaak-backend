@@ -247,8 +247,8 @@ export default function ClientCompletedBookings() {
     );
   }
 
-  const unpaidBookings = bookings.filter((b) => !b.paid);
-  const paidBookings = bookings.filter((b) => b.paid);
+  const unpaidBookings = bookings.filter((b: any) => !b.paid);
+  const paidBookings = bookings.filter((b: any) => b.paid);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -297,7 +297,7 @@ export default function ClientCompletedBookings() {
               </Badge>
             </div>
 
-            {unpaidBookings.map((booking) => {
+            {unpaidBookings.map((booking: any) => {
               const timeRemaining = getTimeRemaining(booking.paymentDeadline);
 
               return (
@@ -411,7 +411,7 @@ export default function ClientCompletedBookings() {
               <Badge variant="success">{paidBookings.length}</Badge>
             </div>
 
-            {paidBookings.map((booking) => (
+            {paidBookings.map((booking: any) => (
               <Card key={booking._id} className="p-6 opacity-75">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex-1">

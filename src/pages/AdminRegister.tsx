@@ -17,14 +17,14 @@ export default function AdminRegister() {
   })
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: any) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
     setIsLoading(true)
 

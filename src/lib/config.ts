@@ -47,8 +47,8 @@ export const getApiUrl = (endpoint: string): string => {
     // During development, use proxy to avoid CORS issues
     // In production, use the configured API URL
     const isDevMode = import.meta.env.MODE === 'development';
-    if (isDevMode && !isCapacitor) {
-        // Use relative paths during development to leverage Vite proxy
+    if (isDevMode && !isCapacitor && !VITE_API_URL) {
+        // Use relative paths during development to leverage Vite proxy only if no custom API URL is set
         const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
         return cleanEndpoint;
     }

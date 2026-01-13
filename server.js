@@ -268,7 +268,7 @@ connectToDatabase().then(async () => {
   
   try {
     // Check if admin user exists
-    const adminPhone = '0700000000'; // Default admin phone
+    const adminPhone = '0777777777'; // Default admin phone
     const existingAdmin = await User.findOne({ role: 'admin', phone: adminPhone });
     
     if (!existingAdmin) {
@@ -292,7 +292,7 @@ connectToDatabase().then(async () => {
       console.log('✅ Admin user already exists, skipping creation');
     }
   } catch (error) {
-    if (error.code === 11000 && error.keyValue && error.keyValue.phone === '0700000000') {
+    if (error.code === 11000 && error.keyValue && error.keyValue.phone === '0777777777') {
       console.log('✅ Admin user already exists, skipping creation (duplicate key error)');
     } else {
       console.error('Error during admin creation check:', error);

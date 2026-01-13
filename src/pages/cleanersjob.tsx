@@ -109,7 +109,7 @@ export default function CleanerJobs() {
 
   const displayedJobs = useMemo(() => {
     if (!profile?.services?.length) return jobs;
-    return jobs.filter((job) =>
+    return jobs.filter((job: any) =>
       profile.services?.includes(job.serviceCategory),
     );
   }, [jobs, profile]);
@@ -142,7 +142,7 @@ export default function CleanerJobs() {
       }
       const data = await res.json();
       toast.success(data.message || "Booking accepted! 🎉");
-      setJobs((prev) => prev.filter((item) => item.id !== job.id));
+      setJobs((prev: any) => prev.filter((item: any) => item.id !== job.id));
       
       fetchAllData();
       
@@ -240,7 +240,7 @@ export default function CleanerJobs() {
                     </Button>
                   </Card>
                 ) : (
-                  displayedJobs.map((job) => (
+                  displayedJobs.map((job: any) => (
                     <Card
                       key={job.id}
                       className="p-5 border border-gray-100 bg-white space-y-4 hover:border-yellow-400 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
@@ -298,7 +298,7 @@ export default function CleanerJobs() {
                           <span>Requirements</span>
                         </p>
                         <ul className="list-disc list-inside space-y-1 ml-1">
-                          {job.requirements.map((item, i) => (
+                          {job.requirements.map((item: any, i: any) => (
                             <li key={i}>{item}</li>
                           ))}
                         </ul>

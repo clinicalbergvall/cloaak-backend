@@ -233,7 +233,7 @@ export default function CleanerActiveBookings() {
                 🧹 Active Jobs ({activeBookings.length})
               </h2>
               <div className="space-y-4">
-                {activeBookings.map((booking) => (
+                {activeBookings.map((booking: any) => (
                   <ActiveBookingCard
                     key={booking._id || booking.id}
                     booking={booking}
@@ -254,7 +254,7 @@ export default function CleanerActiveBookings() {
                 ✅ Completed - Awaiting Payment ({completedBookings.length})
               </h2>
               <div className="space-y-4">
-                {completedBookings.map((booking) => (
+                {completedBookings.map((booking: any) => (
                   <CompletedBookingCard
                     key={booking._id || booking.id}
                     booking={booking}

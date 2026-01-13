@@ -32,17 +32,17 @@ export async function getCurrentLocation(): Promise<Location | null> {
         const Geolocation = await getGeolocation();
         if (Geolocation) {
           // First check if we already have permission
-          const permissionStatus = await Geolocation.checkPermissions();
+          const permissionStatus = await (Geolocation as any).checkPermissions();
           let permission = permissionStatus.location || permissionStatus.coarseLocation;
           
           if (permission !== 'granted') {
             // Request permission if not granted
-            const newPermission = await Geolocation.requestPermissions();
+            const newPermission = await (Geolocation as any).requestPermissions();
             permission = newPermission.location || newPermission.coarseLocation;
           }
           
           if (permission === 'granted') {
-            const { coords } = await Geolocation.getCurrentPosition({
+            const { coords } = await (Geolocation as any).getCurrentPosition({
               enableHighAccuracy: true,
               timeout: 15000,
             });
@@ -114,7 +114,7 @@ export async function getLocationPermissionStatus(): Promise<string> {
       try {
         const Geolocation = await getGeolocation();
         if (Geolocation) {
-          const status = await Geolocation.checkPermissions();
+          const status = await (Geolocation as any).checkPermissions();
           console.log('Geolocation permission status:', status);
           const fine = (status as any)?.location || (status as any)?.coarseLocation;
           return String(fine || 'prompt');
@@ -137,7 +137,7 @@ export async function requestLocationPermission(): Promise<boolean> {
       try {
         const Geolocation = await getGeolocation();
         if (Geolocation) {
-          const result = await Geolocation.requestPermissions();
+          const result = await (Geolocation as any).requestPermissions();
           console.log('Location permission request result:', result);
           const fine = (result as any)?.location || (result as any)?.coarseLocation;
           return fine === 'granted';
@@ -198,12 +198,12 @@ export async function watchLocation(callback: (location: Location) => void): Pro
       const Geolocation = await getGeolocation();
       if (Geolocation) {
         // First check if we have permission
-        const permissionStatus = await Geolocation.checkPermissions();
+        const permissionStatus = await (Geolocation as any).checkPermissions();
         let permission = permissionStatus.location || permissionStatus.coarseLocation;
         
         if (permission !== 'granted') {
           // Request permission if not granted
-          const newPermission = await Geolocation.requestPermissions();
+          const newPermission = await (Geolocation as any).requestPermissions();
           permission = newPermission.location || newPermission.coarseLocation;
           
           if (permission !== 'granted') {
@@ -212,9 +212,8 @@ export async function watchLocation(callback: (location: Location) => void): Pro
           }
         }
         
-        const watchId = await Geolocation.watchPosition(
-          { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 },
-          async (position) => {
+        const watchIdObject = await (Geolocation as any).watchPosition(
+          async (position: any) => {
             if (position) {
               const location: Location = {
                 latitude: position.coords.latitude,
@@ -234,10 +233,12 @@ export async function watchLocation(callback: (location: Location) => void): Pro
           }
         );
         
+        const watchId = typeof watchIdObject === 'object' && 'watchId' in watchIdObject ? watchIdObject.watchId : watchIdObject;
+        
         console.log('Location watching started with Capacitor');
         return { remove: async () => {
           console.log('Stopping location watch');
-          await Geolocation.clearWatch({ id: watchId });
+          await (Geolocation as any).clearWatch({ id: watchId });
         }};
       }
     }

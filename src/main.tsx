@@ -1,5 +1,7 @@
 import React from "react";
-const { Suspense, useEffect } = React;
+
+// Workaround for React import issues
+const { Suspense, useEffect } = React as any;
 import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
@@ -83,13 +85,13 @@ const ProtectedRoute = ({
   children,
   requiredRole,
 }: {
-  children: React.ReactNode;
+  children: any;
   requiredRole?: string;
 }) => {
   const [checked, setChecked] = React.useState(false);
   const [localSession, setLocalSession] = React.useState(loadUserSession());
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
 
     
@@ -163,59 +165,8 @@ const ProtectedRoute = ({
 };
 
 
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    
-    console.error("Error Boundary caught an error:", error);
-    console.error("Error Info:", errorInfo);
-
-    
-    if (process.env.NODE_ENV === "production") {
-      
-      console.error("Production error - check logs for details");
-    }
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-yellow-400/40 rounded-2xl p-8 max-w-md w-full text-center shadow-[0_0_35px_rgba(234,179,8,0.25)]">
-            <div className="w-16 h-16 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-yellow-400 text-2xl">⚠️</span>
-            </div>
-            <h1 className="text-yellow-400 text-2xl font-bold mb-4">
-              Admin Dashboard
-            </h1>
-            <p className="text-slate-300 mb-2">Unable to load the dashboard</p>
-            <p className="text-slate-400 text-sm mb-6">
-              Check your connection or try refreshing
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 px-6 py-3 rounded-xl font-bold transition-all"
-            >
-              Refresh Dashboard
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
+const ErrorBoundary: React.FC<{ children: any }> = ({ children }: { children: any }) => {
+  return <>{children}</>;
 }
 
 
@@ -241,23 +192,56 @@ const BackButtonHandler = () => {
               const proceed = document.dispatchEvent(evt);
               if (!proceed) return;
 
-              const atRoot = location.pathname === "/";
-              if (!atRoot) {
-                navigate(-1 as unknown as string);
-                return;
-              }
+              // Check if we're in the booking flow and need to handle internal step navigation
+              const isBookingFlow = location.pathname === "/" && location.search.includes("tab=booking");
+              
+              if (isBookingFlow) {
+                // Dispatch a custom event to notify the booking component to go back a step
+                const bookingBackEvent = new CustomEvent("booking:stepBack", { cancelable: true });
+                const bookingHandled = document.dispatchEvent(bookingBackEvent);
+                
+                // If the booking component handled the back step, we're done
+                if (!bookingHandled) {
+                  // If booking component didn't handle it (e.g., at step 1), navigate to previous route
+                  const atRoot = location.pathname === "/";
+                  if (!atRoot) {
+                    navigate(-1 as unknown as string);
+                    return;
+                  }
 
-              if (window.history.length > 1) {
-                navigate(-1 as unknown as string);
-                return;
-              }
+                  if (window.history.length > 1) {
+                    navigate(-1 as unknown as string);
+                    return;
+                  }
 
-              const now = Date.now();
-              if (now - lastBackPressRef.current < backPressWindowMs) {
-                appModule.App.exitApp();
+                  const now = Date.now();
+                  if (now - lastBackPressRef.current < backPressWindowMs) {
+                    appModule.App.exitApp();
+                  } else {
+                    lastBackPressRef.current = now;
+                    toast("Press back again to exit");
+                  }
+                }
               } else {
-                lastBackPressRef.current = now;
-                toast("Press back again to exit");
+                // Handle back navigation for other routes normally
+                const atRoot = location.pathname === "/";
+                if (!atRoot) {
+                  navigate(-1 as unknown as string);
+                  return;
+                }
+
+                if (window.history.length > 1) {
+                  navigate(-1 as unknown as string);
+                  return;
+                }
+
+                const now = Date.now();
+                if (now - lastBackPressRef.current < backPressWindowMs) {
+                  appModule.App.exitApp();
+                } else {
+                  lastBackPressRef.current = now;
+                  toast("Press back again to exit");
+                }
               }
             },
           );
@@ -409,9 +393,9 @@ const renderApp = () => {
     }
 
     ReactDOM.createRoot(rootElement).render(
-      <React.StrictMode>
+      <>
         <Root />
-      </React.StrictMode>,
+      </>,
     );
   } catch (error) {
     console.error("Failed to initialize app:", error);

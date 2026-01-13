@@ -1,136 +1,39 @@
-// Define React namespace and types to fix the 'Cannot find namespace React' errors
-import * as ReactNS from 'react';
-
 declare global {
-  namespace React {
-    export = ReactNS;
-  }
-  
   // Define JSX namespace to support JSX elements
   namespace JSX {
     interface IntrinsicElements {
       [elemName: string]: any;
     }
   }
+  
+  interface Window {
+    Capacitor?: any;
+    toast?: any;
+  }
 }
 
-// Define React namespace for component types
-declare namespace React {
-  export import Component = ReactNS.Component;
-  export import FunctionComponent = ReactNS.FunctionComponent;
-  export import FC = ReactNS.FC;
-  export import StatelessComponent = ReactNS.StatelessComponent;
-  export import createElement = ReactNS.createElement;
-  export import cloneElement = ReactNS.cloneElement;
-  export import createContext = ReactNS.createContext;
-  export import forwardRef = ReactNS.forwardRef;
-  export import memo = ReactNS.memo;
-  export import lazy = ReactNS.lazy;
-  export import Suspense = ReactNS.Suspense;
-  export import StrictMode = ReactNS.StrictMode;
-  export import Fragment = ReactNS.Fragment;
-  export import Profiler = ReactNS.Profiler;
-  export import Portal = ReactNS.Portal;
-  export import Children = ReactNS.Children;
-  
-  // Hooks
-  export import useState = ReactNS.useState;
-  export import useEffect = ReactNS.useEffect;
-  export import useLayoutEffect = ReactNS.useLayoutEffect;
-  export import useReducer = ReactNS.useReducer;
-  export import useCallback = ReactNS.useCallback;
-  export import useMemo = ReactNS.useMemo;
-  export import useRef = ReactNS.useRef;
-  export import useImperativeHandle = ReactNS.useImperativeHandle;
-  export import useDebugValue = ReactNS.useDebugValue;
-  export import useId = ReactNS.useId;
-  export import useSyncExternalStore = ReactNS.useSyncExternalStore;
-  export import useTransition = ReactNS.useTransition;
-  export import useDeferredValue = ReactNS.useDeferredValue;
-  export import useInsertionEffect = ReactNS.useInsertionEffect;
-  export import useViewport = ReactNS.useViewport;
-  
-  // Types
-  export import ReactNode = ReactNS.ReactNode;
-  export import ReactElement = ReactNS.ReactElement;
-  export import ComponentClass = ReactNS.ComponentClass;
-  export import SFC = ReactNS.SFC;
-  export import StatelessFunctionalComponent = ReactNS.StatelessFunctionalComponent;
-  export import ReactType = ReactNS.ReactType;
-  export import ComponentState = ReactNS.ComponentState;
-  export import PropsWithChildren = ReactNS.PropsWithChildren;
-  export import MutableRefObject = ReactNS.MutableRefObject;
-  export import RefObject = ReactNS.RefObject;
-  export import SyntheticEvent = ReactNS.SyntheticEvent;
-  export import ClipboardEvent = ReactNS.ClipboardEvent;
-  export import CompositionEvent = ReactNS.CompositionEvent;
-  export import DragEvent = ReactNS.DragEvent;
-  export import FocusEvent = ReactNS.FocusEvent;
-  export import FormEvent = ReactNS.FormEvent;
-  export import InvalidEvent = ReactNS.InvalidEvent;
-  export import ChangeEvent = ReactNS.ChangeEvent;
-  export import KeyboardEvent = ReactNS.KeyboardEvent;
-  export import MouseEvent = ReactNS.MouseEvent;
-  export import TouchEvent = ReactNS.TouchEvent;
-  export import PointerEvent = ReactNS.PointerEvent;
-  export import UIEvent = ReactNS.UIEvent;
-  export import WheelEvent = ReactNS.WheelEvent;
-  export import AnimationEvent = ReactNS.AnimationEvent;
-  export import TransitionEvent = ReactNS.TransitionEvent;
-  export import DetailedHTMLProps = ReactNS.DetailedHTMLProps;
-  export import HTMLAttributes = ReactNS.HTMLAttributes;
-  export import HTMLProps = ReactNS.HTMLProps;
-  export import AllHTMLAttributes = ReactNS.AllHTMLAttributes;
-  export import ColHTMLAttributes = ReactNS.ColHTMLAttributes;
-  export import CellHTMLAttributes = ReactNS.CellHTMLAttributes;
-  export import AreaHTMLAttributes = ReactNS.AreaHTMLAttributes;
-  export import BaseHTMLAttributes = ReactNS.BaseHTMLAttributes;
-  export import BlockquoteHTMLAttributes = ReactNS.BlockquoteHTMLAttributes;
-  export import ButtonHTMLAttributes = ReactNS.ButtonHTMLAttributes;
-  export import CanvasHTMLAttributes = ReactNS.CanvasHTMLAttributes;
-  export import ColgroupHTMLAttributes = ReactNS.ColgroupHTMLAttributes;
-  export import DetailsHTMLAttributes = ReactNS.DetailsHTMLAttributes;
-  export import DialogHTMLAttributes = ReactNS.DialogHTMLAttributes;
-  export import EmbedHTMLAttributes = ReactNS.EmbedHTMLAttributes;
-  export import FieldsetHTMLAttributes = ReactNS.FieldsetHTMLAttributes;
-  export import FormHTMLAttributes = ReactNS.FormHTMLAttributes;
-  export import HtmlHTMLAttributes = ReactNS.HtmlHTMLAttributes;
-  export import IframeHTMLAttributes = ReactNS.IframeHTMLAttributes;
-  export import ImgHTMLAttributes = ReactNS.ImgHTMLAttributes;
-  export import InsHTMLAttributes = ReactNS.InsHTMLAttributes;
-  export import InputHTMLAttributes = ReactNS.InputHTMLAttributes;
-  export import KeygenHTMLAttributes = ReactNS.KeygenHTMLAttributes;
-  export import LabelHTMLAttributes = ReactNS.LabelHTMLAttributes;
-  export import LiHTMLAttributes = ReactNS.LiHTMLAttributes;
-  export import LinkHTMLAttributes = ReactNS.LinkHTMLAttributes;
-  export import MapHTMLAttributes = ReactNS.MapHTMLAttributes;
-  export import MenuHTMLAttributes = ReactNS.MenuHTMLAttributes;
-  export import MediaHTMLAttributes = ReactNS.MediaHTMLAttributes;
-  export import MetaHTMLAttributes = ReactNS.MetaHTMLAttributes;
-  export import MeterHTMLAttributes = ReactNS.MeterHTMLAttributes;
-  export import QuoteHTMLAttributes = ReactNS.QuoteHTMLAttributes;
-  export import ObjectHTMLAttributes = ReactNS.ObjectHTMLAttributes;
-  export import OlHTMLAttributes = ReactNS.OlHTMLAttributes;
-  export import OptgroupHTMLAttributes = ReactNS.OptgroupHTMLAttributes;
-  export import OptionHTMLAttributes = ReactNS.OptionHTMLAttributes;
-  export import OutputHTMLAttributes = ReactNS.OutputHTMLAttributes;
-  export import ParamHTMLAttributes = ReactNS.ParamHTMLAttributes;
-  export import ProgressHTMLAttributes = ReactNS.ProgressHTMLAttributes;
-  export import SelectHTMLAttributes = ReactNS.SelectHTMLAttributes;
-  export import SourceHTMLAttributes = ReactNS.SourceHTMLAttributes;
-  export import SpanHTMLAttributes = ReactNS.SpanHTMLAttributes;
-  export import TableHTMLAttributes = ReactNS.TableHTMLAttributes;
-  export import TextareaHTMLAttributes = ReactNS.TextareaHTMLAttributes;
-  export import TdHTMLAttributes = ReactNS.TdHTMLAttributes;
-  export import ThHTMLAttributes = ReactNS.ThHTMLAttributes;
-  export import TimeHTMLAttributes = ReactNS.TimeHTMLAttributes;
-  export import TrackHTMLAttributes = ReactNS.TrackHTMLAttributes;
-  export import VideoHTMLAttributes = ReactNS.VideoHTMLAttributes;
-  export import WbrHTMLAttributes = ReactNS.WbrHTMLAttributes;
-  export import SVGProps = ReactNS.SVGProps;
-  export import SVGAttributes = ReactNS.SVGAttributes;
-  export import DOMAttributes = ReactNS.DOMAttributes;
+// Capacitor HTTP plugin type definitions
+interface CapacitorHttpRequest {
+  url: string;
+  method: string;
+  headers?: any;
+  data?: any;
 }
+
+interface CapacitorHttpResponse {
+  status: { code: number; text: string } | number;
+  headers?: any;
+  data: any;
+}
+
+interface CapacitorHttpPlugin {
+  request(options: CapacitorHttpRequest): Promise<CapacitorHttpResponse>;
+}
+
+declare module '@capacitor/http' {
+  export const Http: CapacitorHttpPlugin;
+}
+
 
 // Add type declarations for Capacitor plugins
 declare module '@capacitor/app' {

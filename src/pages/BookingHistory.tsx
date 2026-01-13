@@ -37,7 +37,7 @@ function RatingModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (rating === 0) return;
 
@@ -225,15 +225,15 @@ export default function BookingHistory() {
   const filteredHistory =
     (filter === "all"
       ? history
-      : history.filter((item) => {
+      : history.filter((item: any) => {
         if (filter === 'confirmed') {
           return item.status === 'confirmed' || item.status === 'in-progress';
         }
         return item.status === filter;
       })
     )
-      .filter((item) => item.status !== ("cancelled" as unknown as BookingStatus))
-      .filter((item) => (item.serviceCategory as string) !== "home-cleaning"); 
+      .filter((item: any) => item.status !== ("cancelled" as unknown as BookingStatus))
+      .filter((item: any) => (item.serviceCategory as string) !== "home-cleaning"); 
 
 
 
@@ -269,8 +269,8 @@ export default function BookingHistory() {
 
     try {
       
-      setHistory((prev) =>
-        prev.map((item) =>
+      setHistory((prev: any) =>
+        prev.map((item: any) =>
           item.id === selectedBookingForRating.id
             ? { ...item, rating, review }
             : item,
@@ -297,8 +297,8 @@ export default function BookingHistory() {
         }
 
         
-        setHistory((prev) =>
-          prev.map((item) =>
+        setHistory((prev: any) =>
+          prev.map((item: any) =>
             item.id === selectedBookingForRating.id
               ? { ...item, rating: undefined, review: undefined }
               : item,
@@ -314,8 +314,8 @@ export default function BookingHistory() {
         "Network error. Please check your connection.",
       );
       
-      setHistory((prev) =>
-        prev.map((item) =>
+      setHistory((prev: any) =>
+        prev.map((item: any) =>
           item.id === selectedBookingForRating.id
             ? { ...item, rating: undefined, review: undefined }
             : item,
@@ -348,8 +348,8 @@ export default function BookingHistory() {
       toast.success("✅ Job marked as completed! Client has 2 hours to pay.");
 
       
-      setHistory((prev) =>
-        prev.map((item) =>
+      setHistory((prev: any) =>
+        prev.map((item: any) =>
           item.id === booking.id
             ? { ...item, status: "completed" as BookingStatus }
             : item,
@@ -499,7 +499,7 @@ export default function BookingHistory() {
           </div>
         ) : (
           <div className="grid gap-4 w-full">
-            {filteredHistory.map((booking) => {
+            {filteredHistory.map((booking: any) => {
               const isCarService = booking.serviceCategory === "car-detailing";
               const vType = isCarService ? booking.vehicleType : undefined;
               const vehicleOrProperty = vType ? getVehicleCategory(vType) : undefined;
@@ -643,7 +643,7 @@ export default function BookingHistory() {
                         <Button
                           variant="outline"
                           size="xs"
-                          onClick={(e) => {
+                          onClick={(e: any) => {
                             e.stopPropagation();
                             setSelectedChatBooking(booking);
                           }}
@@ -659,7 +659,7 @@ export default function BookingHistory() {
                       <Button
                         variant="primary"
                         size="xs"
-                        onClick={(e) => {
+                        onClick={(e: any) => {
                           e.stopPropagation();
                           setSelectedBookingForPayment(booking);
                           setShowPaymentModal(true);
@@ -690,7 +690,7 @@ export default function BookingHistory() {
                         <Button
                           variant="outline"
                           size="xs"
-                          onClick={(e) => {
+                          onClick={(e: any) => {
                             e.stopPropagation();
                             setSelectedBookingForRating(booking);
                             setRatingModalOpen(true);

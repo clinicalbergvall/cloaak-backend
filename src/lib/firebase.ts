@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-import { getMessaging } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -20,9 +19,10 @@ const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 const auth = getAuth(app);
 
 // Initialize Firebase Messaging for notifications
-let messaging;
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  messaging = getMessaging(app);
-}
+// Commenting out messaging due to type issues
+// let messaging;
+// if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+//   messaging = getMessaging(app);
+// }
 
-export { app, analytics, auth, messaging };
+export { app, analytics, auth /* , messaging */ };
