@@ -607,6 +607,101 @@ export default function BookingEnhanced() {
       { }
       { }
       {
+        step === 2 && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Vehicle Type</h3>
+              <p className="text-gray-600 mb-4">Choose the type of vehicle you want detailed</p>
+            </div>
+            
+            <div className="space-y-2 mb-3">
+              <ProgressBar value={progress} className="mb-1" />
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {activeStages.map((stage: any, index: number) => {
+                  const status =
+                    index < normalizedStageIndex
+                      ? "complete"
+                      : index === normalizedStageIndex
+                        ? "current"
+                        : "upcoming";
+                  const statusClasses =
+                    status === "complete"
+                      ? "bg-black text-white border-black shadow-sm"
+                      : status === "current"
+                        ? "border-2 border-yellow-400 shadow-sm"
+                        : "border border-gray-200 opacity-60";
+                  
+                  return (
+                    <button
+                      key={stage.id}
+                      className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all ${statusClasses}`}
+                      onClick={() => setStep(index + 1)}
+                      disabled={index > normalizedStageIndex}
+                    >
+                      {stage.label}
+                      {status === "complete" && " ✓"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {VEHICLE_CATEGORIES.map((vehicle) => {
+                const status =
+                  vehicleType === vehicle.id
+                    ? "current"
+                    : "upcoming";
+                const statusClasses =
+                  status === "current"
+                    ? "border-2 border-yellow-400 shadow-sm"
+                    : "border border-gray-200 opacity-60";
+                
+                return (
+                  <Card
+                    key={vehicle.id}
+                    variant={vehicleType === vehicle.id ? "default" : "outlined"}
+                    hoverable
+                    selected={vehicleType === vehicle.id}
+                    className={`p-4 cursor-pointer transition-all ${statusClasses}`}
+                    onClick={() => {
+                      setVehicleType(vehicle.id);
+                      // Auto-progress to next step
+                      setStep(3);
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-2xl mb-1">{vehicle.icon}</div>
+                        <h4 className="font-semibold text-gray-900">
+                          {vehicle.name}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {vehicle.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" onClick={() => setUserType(null)} fullWidth>
+                Back
+              </Button>
+              <Button
+                onClick={() => setStep(3)}
+                fullWidth
+                disabled={!vehicleType}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        )
+      }
+      {
         step === 3 && (
           <div className="space-y-4">
             <div>
@@ -674,9 +769,16 @@ export default function BookingEnhanced() {
                     className={`p-4 cursor-pointer transition-all ${statusClasses}`}
                     onClick={() => {
                       setCarServicePackage(pkg.id);
-                      // Auto-progress if not a special package
+                      // Auto-progress if not a special package that requires additional selections
                       if (pkg.id !== "PAINT-CORRECTION" && pkg.id !== "FLEET-PACKAGE") {
                         setStep(4);
+                      } else {
+                        // For special packages, allow user to configure additional options before advancing
+                        if (pkg.id === "PAINT-CORRECTION") {
+                          // User needs to select paint correction stage
+                        } else if (pkg.id === "FLEET-PACKAGE") {
+                          // User needs to select number of cars
+                        }
                       }
                     }}
                   >
@@ -811,7 +913,19 @@ export default function BookingEnhanced() {
                 Back
               </Button>
               <Button
-                onClick={() => setStep(4)}
+                onClick={() => {
+                  // For paint correction, user must select a stage
+                  if (carServicePackage === "PAINT-CORRECTION" && !paintStage) {
+                    toast.error("Please select a paint correction stage");
+                    return;
+                  }
+                  // For fleet package, user must select number of cars
+                  if (carServicePackage === "FLEET-PACKAGE" && fleetCarCount < 2) {
+                    toast.error("Please select at least 2 cars for fleet package");
+                    return;
+                  }
+                  setStep(4);
+                }}
                 fullWidth
                 disabled={!carServicePackage}
               >
@@ -931,8 +1045,17 @@ export default function BookingEnhanced() {
               <Button variant="outline" onClick={() => setStep(3)} fullWidth>
                 Back
               </Button>
-              <Button onClick={() => setStep(5)} fullWidth>
-                Continue{" "}
+              <Button 
+                onClick={() => {
+                  // For fleet package, user must select number of cars
+                  if (carServicePackage === "FLEET-PACKAGE" && fleetCarCount < 2) {
+                    toast.error("Please select at least 2 cars for fleet package");
+                    return;
+                  }
+                  setStep(5);
+                }}
+                fullWidth>
+                Continue
                 {selectedCarExtras.length > 0 &&
                   `(${selectedCarExtras.length} extras)`}
               </Button>
