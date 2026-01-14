@@ -7,8 +7,15 @@ const User = require('../models/User');
 
 
 
-router.post('/profile', protect, authorize('cleaner'), async (req, res) => {
+router.post('/profile', protect, async (req, res) => {
   try {
+    
+    if (req.user.role !== 'cleaner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only users with cleaner role can submit profiles'
+      });
+    }
     
     const existingProfile = await CleanerProfile.findOne({ user: req.user.id });
     if (existingProfile) {
@@ -18,14 +25,19 @@ router.post('/profile', protect, authorize('cleaner'), async (req, res) => {
       });
     }
 
-    const profile = await CleanerProfile.create({
+    
+    const profileData = {
       user: req.user.id,
-      ...req.body
-    });
+      ...req.body,
+      approvalStatus: 'pending',
+      verified: false
+    };
+
+    const profile = await CleanerProfile.create(profileData);
 
     res.status(201).json({
       success: true,
-      message: 'Profile created successfully',
+      message: 'Profile submitted for verification. Our team will review your documents and approve your account.',
       profile
     });
   } catch (error) {
