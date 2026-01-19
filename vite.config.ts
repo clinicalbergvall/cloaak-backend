@@ -64,11 +64,12 @@ module.exports = defineConfig({
     port: 5173,
     strictPort: false,
     host: true,
-    proxy: process.env.VITE_API_URL ? undefined : {
+    proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_API_URL || 'https://clean-cloak-b.onrender.com',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
     },
   },

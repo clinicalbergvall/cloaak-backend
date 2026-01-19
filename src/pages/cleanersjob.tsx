@@ -181,7 +181,7 @@ export default function CleanerJobs() {
           <p className="text-gray-600 max-w-2xl mx-auto">
             {profile?.firstName && (
               <Badge variant="warning" className="mb-3">
-                🚀 {profile.firstName}, you're live on CleanCloak
+                🚀 {profile.firstName}, you're live on CleanCloak Detailer
               </Badge>
             )}
           </p>

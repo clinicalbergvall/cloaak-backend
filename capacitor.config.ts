@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.cleancloak.app',
-  appName: 'CleanCloak',
+  appId: 'com.cleancloak.detailer',
+  appName: 'CleanCloak Detailer',
   webDir: "dist",
 
   

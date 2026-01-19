@@ -1,11 +1,10 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { Card, Button, Badge, Input } from '@/components/ui'
-import type { CleanerProfile, BookingHistoryItem } from '@/lib/types'
+import type { CleanerProfile } from '@/lib/types'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
-import { getStoredAuthToken } from '@/lib/storage'
 
 interface DashboardStats {
   totalCleaners: number
@@ -16,22 +15,9 @@ interface DashboardStats {
   totalRevenue: number
 }
 
-interface ClientData {
-  clientId: string
-  name: string
-  email: string
-  phone: string
-  totalBookings: number
-  totalSpent: number
-  lastBooking: string | null
-  lastService?: string
-  status: string
-}
-
 interface BookingData {
   _id: string
   id?: string
-  phone?: string
   client: { name: string; email: string; phone: string }
   cleaner: { firstName: string; lastName: string }
   serviceCategory: string
@@ -40,11 +26,7 @@ interface BookingData {
   createdAt: string
   scheduledDate?: string
   scheduledTime?: string
-  carServicePackage?: string
-  cleaningCategory?: string
 }
-
-
 
 export default function AdminDashboard() {
   const [pending, setPending] = useState<CleanerProfile[]>([])
@@ -52,19 +34,12 @@ export default function AdminDashboard() {
   const [selectedTab, setSelectedTab] = useState<'pending' | 'approved'>('pending')
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState('all')
-  const [clients, setClients] = useState<ClientData[]>([])
   const [bookings, setBookings] = useState<BookingData[]>([])
   const [bookingStatus, setBookingStatus] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all')
   const [bookingPage, setBookingPage] = useState(1)
-  const [bookingLimit, setBookingLimit] = useState(10)
-  const [bookingTotal, setBookingTotal] = useState(0)
   const [bookingPages, setBookingPages] = useState(0)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
-  const getAuthToken = () => {
-    return getStoredAuthToken()
-  }
 
   const fetchPendingCleaners = async () => {
     try {
@@ -74,7 +49,6 @@ export default function AdminDashboard() {
       setPending(data.cleaners || [])
     } catch (error) {
       logger.error('Fetch pending cleaners error:', error instanceof Error ? error : undefined);
-      toast.error('Failed to load pending cleaners')
     }
   }
 
@@ -86,32 +60,19 @@ export default function AdminDashboard() {
       setApproved(data.cleaners || [])
     } catch (error) {
       logger.error('Fetch approved cleaners error:', error instanceof Error ? error : undefined);
-      toast.error('Failed to load approved cleaners')
     }
   }
 
-  const fetchClients = async () => {
-    try {
-      const res = await api.get('/admin/clients')
-      if (!res.ok) throw new Error('Failed to fetch clients')
-      const data = await res.json()
-      setClients(data.clients || [])
-    } catch (error) {
-      logger.error('Fetch clients error:', error instanceof Error ? error : undefined);
-    }
-  }
-
-  const fetchBookings = async (status?: string, page: number = 1, limit: number = bookingLimit) => {
+  const fetchBookings = async (status?: string, page: number = 1) => {
     try {
       const qs = new URLSearchParams()
       if (status && status !== 'all') qs.set('status', status)
-      if (page) qs.set('page', String(page))
-      if (limit) qs.set('limit', String(limit))
-      const res = await api.get(`/admin/bookings${qs.toString() ? `?${qs.toString()}` : ''}`)
+      qs.set('page', String(page))
+      qs.set('limit', '10')
+      const res = await api.get(`/admin/bookings?${qs.toString()}`)
       if (!res.ok) throw new Error('Failed to fetch bookings')
       const data = await res.json()
       setBookings(data.bookings || [])
-      setBookingTotal(data.total || (data.bookings?.length ?? 0))
       setBookingPages(data.pages || 1)
     } catch (error) {
       logger.error('Fetch bookings error:', error instanceof Error ? error : undefined);
@@ -129,449 +90,285 @@ export default function AdminDashboard() {
     }
   }
 
+  const loadData = async () => {
+    setIsLoading(true)
+    await Promise.all([
+      fetchPendingCleaners(),
+      fetchApprovedCleaners(),
+      fetchBookings(bookingStatus, bookingPage),
+      fetchStats()
+    ])
+    setIsLoading(false)
+  }
+
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      await Promise.all([
-        fetchPendingCleaners(),
-        fetchApprovedCleaners(),
-        fetchClients(),
-        fetchBookings(bookingStatus, bookingPage, bookingLimit),
-        fetchStats()
-      ])
-      setIsLoading(false)
-    }
     loadData()
   }, [])
 
   useEffect(() => {
-    fetchBookings(bookingStatus, bookingPage, bookingLimit)
-  }, [bookingStatus, bookingPage, bookingLimit])
+    fetchBookings(bookingStatus, bookingPage)
+  }, [bookingStatus, bookingPage])
 
-  const refreshLists = () => {
-    fetchPendingCleaners()
-    fetchApprovedCleaners()
-    fetchStats()
-  }
-
-  const handleApprove = async (profile: CleanerProfile & { _id?: string }) => {
+  const handleApprove = async (profileId: string, name: string) => {
     try {
-      const res = await api.put(`/admin/cleaners/${(profile as any)._id || profile.id}/approve`, {
-        notes: 'Approved via admin dashboard'
+      const res = await api.put(`/admin/cleaners/${profileId}/approve`, {
+        notes: 'Verified via High-Priority Admin Cockpit'
       })
-      if (!res.ok) throw new Error('Failed to approve cleaner')
-      toast.success(`${profile.firstName} approved!`)
-      refreshLists()
+      if (!res.ok) throw new Error('Failed to approve')
+      toast.success(`${name} verified successfully`)
+      loadData()
     } catch (error) {
-      logger.error('Approve error:', error instanceof Error ? error : undefined);
-      toast.error('Failed to approve cleaner')
+      toast.error('Verification failed')
     }
   }
 
-  const handleReject = async (profile: CleanerProfile & { _id?: string }) => {
+  const handleReject = async (profileId: string, name: string) => {
     try {
-      const res = await api.put(`/admin/cleaners/${(profile as any)._id || profile.id}/reject`, { notes: 'Rejected via admin dashboard' })
-      if (!res.ok) throw new Error('Failed to reject cleaner')
-      toast('Cleaner rejected', { icon: '⚠️' })
-      refreshLists()
+      const res = await api.put(`/admin/cleaners/${profileId}/reject`, {
+        notes: 'Security clearance denied'
+      })
+      if (!res.ok) throw new Error('Failed to reject')
+      toast.error(`${name} rejected`)
+      loadData()
     } catch (error) {
-      logger.error('Reject error:', error instanceof Error ? error : undefined);
-      toast.error('Failed to reject cleaner')
+      toast.error('Rejection failed')
     }
   }
-
-  const allCleaners = [...pending, ...approved]
-
-  const summary = useMemo(() => {
-    if (!stats) return { total: 0, totalJobs: 0 }
-    return {
-      total: stats.totalCleaners,
-      totalJobs: stats.totalBookings
-    }
-  }, [stats])
-
-  const recentActivity = useMemo(() => {
-    return [...pending, ...approved]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 4)
-  }, [pending, approved])
 
   const uniqueCities = useMemo(() => {
-    const cities = new Set([...pending, ...approved].map(cleaner => cleaner.city).filter(Boolean))
+    const cities = new Set([...pending, ...approved].map((c: CleanerProfile) => c.city).filter(Boolean))
     return ['all', ...Array.from(cities)]
   }, [pending, approved])
 
-  const filteredList = (selectedTab === 'pending' ? allCleaners : approved)
-    .filter((profile: CleanerProfile) => `${profile.firstName} ${profile.lastName}`.toLowerCase().includes(search.toLowerCase()))
-    .filter((profile: CleanerProfile) => cityFilter === 'all' || profile.city === cityFilter)
-
-
-
-  const monitoringSignals = useMemo(() => {
-    const lowRatings = approved.filter((cleaner: CleanerProfile) => (cleaner.rating || 0) < 3).length
-    const idleCleaners = approved.filter((cleaner: CleanerProfile) => (cleaner.totalJobs || 0) === 0).length
-    const newCleaners = approved.filter((cleaner: CleanerProfile) => {
-      const createdAt = cleaner.createdAt ? new Date(cleaner.createdAt) : null
-      if (!createdAt) return false
-      const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
-      return daysSinceCreation <= 7
-    }).length
-
-    return [
-      { label: 'New This Week', value: newCleaners, subtitle: 'Recently joined', tone: 'warning' as const },
-      { label: 'Low Ratings', value: lowRatings, subtitle: '< 3 ★ rating', tone: 'alert' as const },
-      { label: 'Idle Cleaners', value: idleCleaners, subtitle: '0 recent jobs', tone: 'neutral' as const }
-    ]
-  }, [pending, approved])
+  const filteredCleaners = (selectedTab === 'pending' ? pending : approved)
+    .filter((p: CleanerProfile) => (`${p.firstName} ${p.lastName}`).toLowerCase().includes(search.toLowerCase()))
+    .filter((p: CleanerProfile) => cityFilter === 'all' || p.city === cityFilter)
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full space-y-8">
-        <header className="relative rounded-3xl border border-yellow-400/40 bg-gradient-to-br from-slate-900 via-slate-950 to-black p-6 sm:p-8 shadow-[0_0_35px_rgba(234,179,8,0.25)]">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/logo.png"
-                  alt="CleanCloak logo"
-                  className="h-12 w-12 rounded-2xl border border-yellow-400/50 bg-black/40 p-2 shadow-[0_0_25px_rgba(250,204,21,0.35)]"
-                />
-                <div>
-                  <p className="text-xs tracking-[0.3em] uppercase text-yellow-300">CleanCloak</p>
-                  <p className="text-sm font-semibold text-slate-200">Ops Control Division</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-xs tracking-[0.3em] uppercase text-yellow-400">Command Center</p>
-                <h1 className="mt-2 text-4xl font-black tracking-tight text-white">Cleaner Intelligence Dashboard</h1>
-                <p className="mt-3 max-w-2xl text-sm text-slate-300">
-                  Monitor the entire cleaner lifecycle in real time — active cleaners, compliance, ratings, and output all from one neon cockpit.
-                </p>
-              </div>
+    <div className="min-h-screen bg-[#050505] text-slate-200 selection:bg-yellow-500/30 font-inter">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-yellow-500/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="relative max-w-[1600px] mx-auto p-4 md:p-8 space-y-8">
+        {/* Top Navigation / Stats Cockpit */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-8 rounded-[2rem] border border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-yellow-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
+              <img src="/detail-logo.jpg" className="relative w-16 h-16 rounded-2xl object-cover border border-white/10" alt="CleanCloak Logo" />
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={refreshLists} disabled={isLoading} className="border-yellow-400/60 text-yellow-300 hover:bg-yellow-400/10">
-                {isLoading ? 'Loading...' : 'Sync Records'}
-              </Button>
-              <Button className="bg-yellow-400 text-slate-950 hover:bg-yellow-300">Launch Audit Mode</Button>
+            <div>
+              <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
+                Operations <span className="text-yellow-400">Cockpit</span>
+                <Badge variant="outline" className="border-yellow-500/30 text-yellow-400 bg-yellow-500/5 animate-pulse">LIVE SYSTEM</Badge>
+              </h1>
+              <p className="text-slate-400 font-inter mt-1">Global Verification & Dispatch Control</p>
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <StatCard label="Total Cleaners" value={stats?.totalCleaners || 0} accent="from-yellow-300/80 to-yellow-500/60" />
-            <StatCard label="Active Cleaners" value={stats?.approvedCleaners || 0} accent="from-emerald-300/70 to-emerald-500/50" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 lg:max-w-3xl">
+            <StatCard label="Total Value" value={`KSh ${(stats?.totalRevenue || 0).toLocaleString()}`} icon="💰" />
+            <StatCard label="Live Agents" value={stats?.approvedCleaners || 0} icon="🌍" />
+            <StatCard label="Pending Approval" value={stats?.pendingCleaners || 0} icon="⏳" highlight={!!stats?.pendingCleaners} />
+            <StatCard label="Global Jobs" value={stats?.totalBookings || 0} icon="📦" />
           </div>
+
+          <Button onClick={loadData} disabled={isLoading} variant="primary" className="h-14 px-8 rounded-2xl bg-white text-black hover:bg-yellow-400 transition-all font-black uppercase tracking-widest text-xs">
+            {isLoading ? 'Syncing...' : 'Force Refresh'}
+          </Button>
         </header>
 
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[2fr_1fr]">
-          <section className="relative space-y-6 rounded-3xl border border-slate-800/80 bg-slate-950/60 p-6 shadow-2xl">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex overflow-hidden rounded-2xl border border-slate-800">
-                <button
-                  className={`flex-1 px-6 py-3 text-sm font-semibold tracking-wide transition ${selectedTab === 'pending'
-                    ? 'bg-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(250,204,21,0.5)]'
-                    : 'bg-transparent text-slate-400 hover:text-white'
-                    }`}
-                  onClick={() => setSelectedTab('pending')}
-                >
-                  All Cleaners ({pending.length + approved.length})
-                </button>
-                <button
-                  className={`flex-1 px-6 py-3 text-sm font-semibold tracking-wide transition ${selectedTab === 'approved'
-                    ? 'bg-emerald-400 text-slate-950 shadow-[0_0_25px_rgba(52,211,153,0.5)]'
-                    : 'bg-transparent text-slate-400 hover:text-white'
-                    }`}
-                  onClick={() => setSelectedTab('approved')}
-                >
-                  Approved ({approved.length})
-                </button>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
+          {/* Main List Management */}
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl border border-white/5 bg-white/5 backdrop-blur-md">
+              <div className="flex p-1.5 bg-black/40 rounded-2xl border border-white/5 w-full md:w-auto">
+                <TabButton active={selectedTab === 'pending'} onClick={() => setSelectedTab('pending')} count={pending.length} label="Pending Review" />
+                <TabButton active={selectedTab === 'approved'} onClick={() => setSelectedTab('approved')} count={approved.length} label="Verified Agents" />
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  placeholder="Search cleaner name"
-                  value={search}
+              
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <Input 
+                  placeholder="Filter by name..." 
+                  value={search} 
                   onChange={(e: any) => setSearch(e.target.value)}
-                  className="min-w-[220px] border-slate-800 bg-slate-900/60 text-slate-100 placeholder:text-slate-500"
+                  className="h-12 border-white/5 bg-black/40 rounded-xl focus:ring-yellow-500/50"
                 />
-                <select
+                <select 
+                  className="h-12 px-4 bg-black/40 border border-white/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
                   value={cityFilter}
                   onChange={(e: any) => setCityFilter(e.target.value)}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-2 text-sm text-slate-200 focus:outline-none"
                 >
-                  {uniqueCities.map((city: string) => (
-                    <option key={city} value={city} className="bg-slate-900 text-slate-100">
-                      {city === 'all' ? 'All Cities' : city}
-                    </option>
-                  ))}
+                  {uniqueCities.map((c: string) => <option key={c} value={c}>{c === 'all' ? 'All Locations' : c}</option>)}
                 </select>
               </div>
             </div>
 
-            {filteredList.length === 0 ? (
-              <Card className="bg-slate-900/50 border border-slate-800 text-center text-slate-400">
-                {selectedTab === 'pending' ? 'No cleaners match your filters' : 'No approved cleaners match your filters'}
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredList.map((profile: CleanerProfile) => (
-                  <CleanerCard
-                    key={profile.id}
-                    profile={profile}
-                    isPending={profile.approvalStatus === 'pending'}
-                    onApprove={() => handleApprove(profile)}
-                    onReject={() => handleReject(profile)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <aside className="space-y-6 xl:sticky xl:top-8">
-            <Card className="relative border border-slate-800 bg-slate-950/70 p-5">
-              <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Bookings</p>
-                <span className="text-xs text-slate-500">{bookingTotal} total</span>
-              </div>
-              <div className="mt-4 flex overflow-hidden rounded-2xl border border-slate-800">
-                {['all', 'pending', 'confirmed', 'completed'].map((s) => (
-                  <button
-                    key={s}
-                    className={`flex-1 px-3 py-2 text-xs font-semibold tracking-wide transition ${bookingStatus === s
-                      ? 'bg-emerald-400 text-slate-950'
-                      : 'bg-transparent text-slate-400 hover:text-white'
-                      }`}
-                    onClick={() => { setBookingStatus(s as any); setBookingPage(1) }}
-                  >
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
-
-              {bookings.length === 0 ? (
-                <Card className="mt-4 bg-slate-900/50 border border-slate-800 text-center text-slate-400">No bookings</Card>
+            <div className="grid gap-4">
+              {filteredCleaners.length === 0 ? (
+                <div className="p-20 text-center rounded-[2rem] border border-dashed border-white/10 bg-white/2">
+                  <p className="text-slate-500 font-inter text-sm">No intelligence data matches current protocol filters.</p>
+                </div>
               ) : (
-                <div className="mt-4 space-y-3">
-                  {bookings.map((b: BookingData) => (
-                    <div key={b._id || b.id} className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-white">{b.serviceCategory}</p>
-                          <p className="text-xs text-slate-400">Client: {b.client?.name} · {b.client?.phone}</p>
-                          <p className="text-xs text-slate-400">Cleaner: {b.cleaner?.firstName} {b.cleaner?.lastName}</p>
-                        </div>
-                        <Badge variant={b.status === 'completed' ? 'success' : (b.status === 'in-progress' || b.status === 'confirmed') ? 'default' : 'secondary'}>
-                          {b.status === 'in-progress' ? 'CONFIRMED' : b.status?.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-3 text-xs text-slate-400">
-                        <div>Price: KSh {Number(b.price || 0).toLocaleString()}</div>
-                        <div>Created: {new Date(b.createdAt).toLocaleString()}</div>
-                        <div>Schedule: {(b.scheduledDate || 'N/A')} {(b.scheduledTime || '')}</div>
-                      </div>
-                      <div className="mt-2 text-xs text-slate-400">
-                        {(b.serviceCategory === 'car-detailing' ? (b.carServicePackage || 'Car Detailing') : (b.cleaningCategory || 'Car Detailing'))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                filteredCleaners.map((cleaner: CleanerProfile) => (
+                  <CleanerRow 
+                    key={cleaner.id || (cleaner as any)._id} 
+                    cleaner={cleaner} 
+                    isPending={selectedTab === 'pending'}
+                    onApprove={() => handleApprove((cleaner as any)._id || cleaner.id, `${cleaner.firstName} ${cleaner.lastName}`)}
+                    onReject={() => handleReject((cleaner as any)._id || cleaner.id, `${cleaner.firstName} ${cleaner.lastName}`)}
+                  />
+                ))
               )}
+            </div>
+          </div>
 
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button
-                    className="rounded-xl border border-slate-800 px-3 py-1 text-xs text-slate-200 disabled:opacity-40"
-                    disabled={bookingPage <= 1}
-                    onClick={() => setBookingPage((p: number) => Math.max(1, p - 1))}
-                  >
-                    Prev
-                  </button>
-                  <button
-                    className="rounded-xl border border-slate-800 px-3 py-1 text-xs text-slate-200 disabled:opacity-40"
-                    disabled={bookingPage >= bookingPages}
-                    onClick={() => setBookingPage((p: number) => Math.min(bookingPages, p + 1))}
-                  >
-                    Next
-                  </button>
-                </div>
-                <span className="text-xs text-slate-500">Page {bookingPage} / {bookingPages || 1}</span>
+          {/* Side Panel - Recent Operations */}
+          <aside className="space-y-6">
+            <div className="p-6 rounded-[2rem] border border-white/5 bg-white/5 backdrop-blur-xl space-y-6">
+              <h3 className="text-xl font-black text-white flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Real-time Dispatch
+              </h3>
+              
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                {bookings.map((booking: BookingData) => (
+                  <div key={booking._id} className="p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors group">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-[10px] font-black uppercase text-yellow-400/80 tracking-widest">{booking.serviceCategory}</p>
+                      <Badge variant={booking.status === 'completed' ? 'success' : 'default'} className="rounded-lg text-[10px] font-black">{booking.status.toUpperCase()}</Badge>
+                    </div>
+                    <p className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors">{booking.client.name}</p>
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                      📍 {booking.cleaner?.firstName} {booking.cleaner?.lastName || 'Unassigned'}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+                      <span>{new Date(booking.createdAt).toLocaleDateString()}</span>
+                      <span className="text-emerald-400">KSh {booking.price}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </Card>
+
+              <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold">
+                <button 
+                  onClick={() => setBookingPage((p: number) => Math.max(1, p-1))}
+                  disabled={bookingPage === 1}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-all font-black"
+                >
+                  PREV
+                </button>
+                <span className="text-slate-500 uppercase text-[10px] tracking-widest">OP-{bookingPage} / {bookingPages}</span>
+                <button 
+                  onClick={() => setBookingPage((p: number) => Math.min(bookingPages, p+1))}
+                  disabled={bookingPage === bookingPages}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-all font-black"
+                >
+                  NEXT
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-[2rem] border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-transparent backdrop-blur-3xl text-center space-y-4">
+              <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/40">
+                <span className="text-xl">💎</span>
+              </div>
+              <h4 className="font-black text-white uppercase tracking-wider text-sm">Elite Platform Status</h4>
+              <p className="text-xs text-slate-400 leading-relaxed font-inter">
+                Your system is operating at <span className="text-emerald-400 font-bold">99.9% efficiency</span>. Security protocols for detailer verification are active.
+              </p>
+            </div>
           </aside>
         </div>
       </div>
-
-
     </div>
   )
 }
 
-function PaymentPill({ label, value, tone }: { label: string; value: string; tone: 'emerald' | 'amber' | 'cyan' }) {
-  const toneClasses = {
-    emerald: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-100',
-    amber: 'border-amber-400/40 bg-amber-400/10 text-amber-100',
-    cyan: 'border-cyan-400/40 bg-cyan-400/10 text-cyan-100'
-  } as const
-
+function StatCard({ label, value, icon, highlight }: { label: string; value: string | number; icon: string; highlight?: boolean }) {
   return (
-    <div className={`rounded-2xl border px-4 py-3 text-center ${toneClasses[tone]}`}>
-      <p className="text-xs uppercase tracking-[0.3em]">{label}</p>
-      <p className="mt-2 text-lg font-semibold">{value}</p>
+    <div className={`p-4 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-xl relative group transition-all ${highlight ? 'ring-1 ring-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.1)]' : ''}`}>
+      <div className="text-xl mb-2">{icon}</div>
+      <p className="text-[10px] uppercase tracking-widest text-slate-500 font-black">{label}</p>
+      <p className="text-lg md:text-xl font-black text-white mt-1 group-hover:text-yellow-400 transition-colors truncate">{value}</p>
     </div>
   )
 }
 
-function StatCard({
-  label,
-  value,
-  accent
-}: {
-  label: string
-  value: string | number
-  accent: string
-}) {
+function TabButton({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
   return (
-    <div className={`rounded-2xl border border-slate-800/70 bg-gradient-to-br ${accent} p-4 text-slate-900 shadow-inner shadow-black/30`}>
-      <p className="text-xs uppercase tracking-[0.3em] text-slate-900/70">{label}</p>
-      <p className="mt-3 text-3xl font-black">{value}</p>
-      <div className="mt-2 h-1 rounded-full bg-white/50">
-        <div className="h-full rounded-full bg-slate-900/80" />
-      </div>
-    </div>
-  )
-}
-
-function CleanerCard({
-  profile,
-  isPending,
-  onApprove,
-  onReject
-}: {
-  profile: CleanerProfile
-  isPending: boolean
-  onApprove: () => void
-  onReject: () => void
-}) {
-  return (
-    <Card className="border border-slate-800/80 bg-slate-950/70 p-6 text-slate-200">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-full border border-yellow-400/50 bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-yellow-300">
-              {profile.approvalStatus === 'approved' ? 'Live' : 'Review'}
-            </div>
-            <h2 className="text-2xl font-semibold text-white">
-              {profile.firstName} {profile.lastName}
-            </h2>
-            <Badge variant={isPending ? 'warning' : 'success'}>{profile.city}</Badge>
-          </div>
-          <p className="mt-2 text-sm text-slate-400">
-            {profile.phone} · {profile.email || 'No email on file'}
-          </p>
-          <div className="mt-3">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Services</p>
-            <p className="text-sm text-slate-200">{(profile.services || []).join(', ') || 'Not specified'}</p>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Address</p>
-              <p className="text-sm text-slate-200 truncate">{profile.address || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Member Since</p>
-              <p className="text-sm text-slate-200">
-                {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Unknown'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <MiniMetric label="Rating" value={`${profile.rating ?? 0} ★`} />
-          <MiniMetric label="Jobs" value={profile.totalJobs ?? 0} />
-          <MiniMetric label="Verified" value={profile.verified ? 'Yes' : 'No'} />
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {renderImageSlot('Passport', profile.passportPhoto)}
-        {renderImageSlot('Full Body', profile.fullBodyPhoto)}
-        <div className="rounded-2xl border border-slate-800/70 bg-slate-900/40 p-4 text-sm text-slate-400">
-          <p className="text-xs tracking-[0.2em] text-slate-500">ID Verification</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <VerificationChip label="ID" active={!!profile.verification?.idVerified} />
-            <VerificationChip label="Police" active={!!profile.verification?.policeCheck} />
-            <VerificationChip label="Insurance" active={!!profile.verification?.insuranceCoverage} />
-          </div>
-          {profile.verification?.idNumber && (
-            <p className="mt-2 text-xs text-slate-300">ID: {profile.verification.idNumber}</p>
-          )}
-        </div>
-      </div>
-
-      {profile.beforeAfterPhotos && profile.beforeAfterPhotos.length > 0 && (
-        <div className="mt-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Recent Jobs ({profile.beforeAfterPhotos.length})</p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {profile.beforeAfterPhotos.slice(0, 2).map((photo) => (
-              <div key={photo.id} className="overflow-hidden rounded-2xl border border-slate-800">
-                <div className="flex gap-2">
-                  <img src={photo.beforeImage} alt="Before" className="h-20 w-1/2 object-cover" />
-                  <img src={photo.afterImage} alt="After" className="h-20 w-1/2 object-cover" />
-                </div>
-                {photo.description && (
-                  <p className="p-2 text-xs text-slate-300 truncate">{photo.description}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {isPending && (
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button variant="outline" onClick={onReject} className="border-rose-500/60 text-rose-200 hover:bg-rose-500/10">
-            Reject
-          </Button>
-          <Button onClick={onApprove} className="bg-emerald-400 text-slate-950 hover:bg-emerald-300">
-            Approve
-          </Button>
-        </div>
-      )}
-    </Card>
-  )
-}
-
-function MiniMetric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-2xl border border-slate-800/70 bg-slate-900/40 px-4 py-3 text-center">
-      <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-slate-100">{value}</p>
-    </div>
-  )
-}
-
-function renderImageSlot(label: string, src?: string) {
-  return (
-    <div className="rounded-2xl border border-slate-800/70 bg-slate-900/40 p-4 text-center">
-      <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{label}</p>
-      {src ? (
-        <img src={src} alt={label} className="mt-3 h-32 w-full rounded-xl object-cover" />
-      ) : (
-        <p className="mt-4 text-sm text-slate-500">Pending upload</p>
-      )}
-    </div>
-  )
-}
-
-function VerificationChip({ label, active }: { label: string; active: boolean }) {
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs font-semibold ${active ? 'bg-emerald-400/20 text-emerald-200' : 'bg-slate-700/40 text-slate-400'
-        }`}
+    <button 
+      onClick={onClick}
+      className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 flex-1 md:flex-none justify-center ${active ? 'bg-white text-black shadow-xl ring-4 ring-white/10' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
     >
       {label}
-    </span>
+      <span className={`px-2 py-0.5 rounded-md text-[10px] ${active ? 'bg-black text-white' : 'bg-white/10 text-slate-400'}`}>{count}</span>
+    </button>
+  )
+}
+
+function CleanerRow({ cleaner, isPending, onApprove, onReject }: { cleaner: any; isPending: boolean; onApprove: () => void; onReject: () => void }) {
+  return (
+    <div className="group p-6 rounded-[2rem] border border-white/5 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-white/10 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6 overflow-hidden">
+      <div className="flex items-center gap-6 flex-1 min-w-0">
+        <div className="relative flex-shrink-0">
+          {cleaner.profileImage ? (
+            <img src={cleaner.profileImage} className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white/10 shadow-2xl" />
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-3xl ring-2 ring-white/10 uppercase font-black text-slate-600">
+              {cleaner.firstName?.[0]}{cleaner.lastName?.[0]}
+            </div>
+          )}
+          <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-4 border-[#0a0a0a] flex items-center justify-center text-[10px] ${cleaner.verified ? 'bg-emerald-500' : 'bg-yellow-500'}`}>
+            {cleaner.verified ? '✓' : '!'}
+          </div>
+        </div>
+        
+        <div className="space-y-1 min-w-0 flex-1">
+          <div className="flex items-center gap-3">
+            <h4 className="text-xl font-black text-white group-hover:text-yellow-400 transition-colors truncate">{cleaner.firstName} {cleaner.lastName}</h4>
+            <Badge className="bg-white/5 text-slate-400 border-none font-black text-[10px] uppercase tracking-tighter flex-shrink-0">{cleaner.city}</Badge>
+          </div>
+          <p className="text-sm text-slate-400 font-inter truncate">{cleaner.phone} • {cleaner.email || 'NO SECURE EMAIL'}</p>
+          <div className="flex items-center gap-4 mt-2 flex-wrap">
+            <Metric small label="Jobs" value={cleaner.totalJobs || 0} />
+            <Metric small label="Rating" value={`${cleaner.rating || 0} ★`} />
+            <div className="flex gap-1">
+               {cleaner.verification?.policeCheck && <Badge className="bg-emerald-500/10 text-emerald-400 text-[8px] px-1 py-0 border-none font-black">POLICE</Badge>}
+               {cleaner.verification?.idVerified && <Badge className="bg-blue-500/10 text-blue-400 text-[8px] px-1 py-0 border-none font-black">ID</Badge>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 self-end lg:self-center flex-shrink-0">
+        {isPending ? (
+          <>
+            <button onClick={onReject} className="h-12 px-6 rounded-xl text-rose-500 hover:bg-rose-500/10 font-black uppercase tracking-widest text-[10px] transition-all">
+              Deny Protocol
+            </button>
+            <button onClick={onApprove} className="h-12 px-8 rounded-xl bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 transition-all">
+              Authorize Agent
+            </button>
+          </>
+        ) : (
+          <button className="h-12 px-6 rounded-xl text-slate-500 hover:bg-white/5 font-black uppercase tracking-widest text-[10px] transition-all">
+            Manage Profile
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Metric({ label, value, small }: { label: string; value: string | number; small?: boolean }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] font-black uppercase text-slate-600 tracking-tighter">{label}</span>
+      <span className="text-sm font-black text-slate-200">{value}</span>
+    </div>
   )
 }

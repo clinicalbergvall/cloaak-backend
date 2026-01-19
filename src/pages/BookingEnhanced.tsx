@@ -827,7 +827,6 @@ export default function BookingEnhanced() {
                   }
                 }}
                 fullWidth
-                disabled={!phone || (isSignup && (!name || !password))}
                 className="min-h-12"
               >
                 {isSignup ? "Create Account" : "Sign In"}

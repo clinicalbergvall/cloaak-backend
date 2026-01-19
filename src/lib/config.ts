@@ -47,10 +47,12 @@ export const getApiUrl = (endpoint: string): string => {
     // During development, use proxy to avoid CORS issues
     // In production, use the configured API URL
     const isDevMode = import.meta.env.MODE === 'development';
-    if (isDevMode && !isCapacitor && !VITE_API_URL) {
-        // Use relative paths during development to leverage Vite proxy only if no custom API URL is set
+    if (isDevMode && !isCapacitor) {
+        // Use relative paths during development to leverage Vite proxy
+        // This avoids CORS issues when connecting to external or local backends
+        // We MUST prepend /api to match the Vite proxy configuration
         const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-        return cleanEndpoint;
+        return `/api${cleanEndpoint}`;
     }
     
     // For Capacitor, we don't add additional /api since the base URL handles it

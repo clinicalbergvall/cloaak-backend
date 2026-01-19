@@ -1,5 +1,8 @@
+// @ts-ignore
 import { initializeApp } from "firebase/app";
+// @ts-ignore
 import { getAnalytics } from "firebase/analytics";
+// @ts-ignore
 import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration

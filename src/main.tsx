@@ -12,8 +12,10 @@ import {
   useLocation,
 } from "react-router-dom";
 import AppEnhanced from "./AppEnhanced";
+import LandingPage from "./LandingPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CleanerJobs from "./pages/cleanersjob";
+import VerificationPending from "./pages/VerificationPending";
 import AdminRegister from "./pages/AdminRegister";
 import ClientProfile from "./pages/ClientProfile";
 import ActiveBooking from "./pages/ActiveBooking";
@@ -184,6 +186,21 @@ const ProtectedRoute = ({
     return <Navigate to="/" replace />;
   }
 
+  // Block unverified cleaners from accessing any protected cleaner route EXCEPT the pending page itself
+  if (localSession.userType === 'cleaner') {
+    const isUnverified = localSession.verificationStatus !== 'verified' && !localSession.isVerified;
+    const isAtPendingPage = window.location.pathname === '/pending-verification';
+    
+    if (isUnverified && !isAtPendingPage) {
+      return <Navigate to="/pending-verification" replace />;
+    }
+    
+    // If successfully verified while at pending page, redirect forward to jobs
+    if (!isUnverified && isAtPendingPage) {
+      return <Navigate to="/jobs" replace />;
+    }
+  }
+
   return <>{children}</>;
 };
 
@@ -305,24 +322,7 @@ const Root = () => {
             }
           >
             <Routes>
-              <Route path="/" element={<AppEnhanced />} />
-              <Route path="/profile" element={<ClientProfile />} />
-              <Route
-                path="/completed-bookings"
-                element={
-                  <ProtectedRoute requiredRole="client">
-                    <CompletedBookings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/active-booking/:id"
-                element={
-                  <ProtectedRoute>
-                    <ActiveBooking />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/" element={<LandingPage />} />
               <Route
                 path="/admin"
                 element={
@@ -361,6 +361,14 @@ const Root = () => {
                 element={
                   <ProtectedRoute requiredRole="cleaner">
                     <Earnings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/pending-verification"
+                element={
+                  <ProtectedRoute requiredRole="cleaner">
+                    <VerificationPending />
                   </ProtectedRoute>
                 }
               />
@@ -428,7 +436,7 @@ const renderApp = () => {
       rootElement.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; background-color: #f3f4f6;">
           <div>
-            <h1 style="color: #FACC15; margin-bottom: 16px; font-family: sans-serif; font-size: 24px;">CleanCloak</h1>
+            <h1 style="color: #FACC15; margin-bottom: 16px; font-family: sans-serif; font-size: 24px;">CleanCloak Detailer</h1>
             <p style="color: #6B7280; margin-bottom: 8px; font-family: sans-serif;">App failed to load</p>
             <p style="color: #9CA3AF; font-size: 14px; font-family: sans-serif;">Error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
             <p style="color: #9CA3AF; font-size: 12px; font-family: sans-serif; margin-top: 10px;">Check browser console for more details</p>

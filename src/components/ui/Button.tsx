@@ -55,7 +55,7 @@ export const Button = forwardRef(
     return (
       <button
         ref={ref}
-        className={`${baseStyles} ${(variants as any)[variant!]} ${(sizes as any)[size!]} ${fullWidth ? "w-full" : ""} ${pressedStyles} ${className}`}
+        className={`${baseStyles} ${(variants as any)[variant!]} ${(sizes as any)[size!]} ${fullWidth ? "w-full" : ""} ${className}`}
         disabled={disabled || loading}
         {...props}
       >
@@ -279,7 +279,7 @@ export const LoginForm = ({
     phone: "",
     password: "",
     name: "",
-    role: "client" as "client" | "cleaner",
+    role: "cleaner" as "client" | "cleaner",
   });
 
   const handleInputChange = (
@@ -376,25 +376,6 @@ export const LoginForm = ({
                     onChange={handleInputChange}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="role"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    I am a
-                  </label>
-                  <select
-                    id="role"
-                    name="role"
-                    value={isLogin ? "client" : (formData as RegisterData).role}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="client">Client</option>
-                    <option value="cleaner">Cleaner</option>
-                  </select>
                 </div>
               </>
             )}
