@@ -68,7 +68,7 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Client-Type, X-HTTP-Method-Override');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Client-Type, X-HTTP-Method-Override, X-Capacitor');
     res.header('Access-Control-Allow-Credentials', 'true');
     
     // Handle preflight requests
@@ -122,6 +122,7 @@ const corsOptions = {
       'https://clean-cloak-b.onrender.com',
       'https://teal-daffodil-d3a9b2.netlify.app',
       'https://your-deployed-frontend.com', // Add your actual deployed frontend URL
+      'https://rad-maamoul-c7a511.netlify.app', // Your deployed app URL
       'ionic://localhost',
       'capacitor://localhost',
       'http://localhost',
@@ -156,7 +157,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'X-Client-Type', 'X-Requested-With', 'X-HTTP-Method-Override']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'X-Client-Type', 'X-Requested-With', 'X-HTTP-Method-Override', 'X-Capacitor']
 };
 app.use(cors(corsOptions));
 
